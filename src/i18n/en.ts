@@ -2,6 +2,7 @@
 // from this object so a typo in t("…") is a compile error. Keep keys grouped by
 // screen. Placeholders use {name}; numbers are locale-formatted automatically.
 export const en = {
+  "controls.invalid": "That file is not a valid controls layout.",
   "settings.mobile": "On-device game",
   "settings.renderer": "Renderer",
   "settings.rendererHint": "Holy GL4ES is the most compatible. LTW needs libltw.so in the build.",
