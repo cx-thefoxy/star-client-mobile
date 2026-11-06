@@ -27,7 +27,27 @@ public final class StarBridge {
   }
 
   /** Called by StarGameClient when the ":jvm" process is gone. */
-  static void serviceDied() { nativeServiceDied(); }
+  static void serviceDied() {
+    try { logExitReason(); } catch (Throwable ignored) { }
+    nativeServiceDied();
+  }
+
+  private static String lastLog;
+
+  /** The ":jvm" process can die without writing anything (native crash, killed): ask Android why and put it in the game log. */
+  private static void logExitReason() throws Exception {
+    Activity a = activity;
+    if (a == null || lastLog == null || android.os.Build.VERSION.SDK_INT < 30) return;
+    ActivityManager am = (ActivityManager) a.getSystemService(android.content.Context.ACTIVITY_SERVICE);
+    for (android.app.ApplicationExitInfo i : am.getHistoricalProcessExitReasons(a.getPackageName(), 0, 8)) {
+      if (i.getProcessName() == null || !i.getProcessName().endsWith(":jvm")) continue;
+      String[] names = { "?", "EXIT_SELF", "SIGNALED", "LOW_MEMORY", "CRASH", "CRASH_NATIVE", "ANR", "INITIALIZATION_FAILURE", "PERMISSION_CHANGE", "EXCESSIVE_RESOURCE_USAGE", "USER_REQUESTED", "USER_STOPPED", "DEPENDENCY_DIED", "OTHER" };
+      int r = i.getReason();
+      String line = "\n[star] :jvm process ended: reason=" + (r >= 0 && r < names.length ? names[r] : String.valueOf(r)) + " status=" + i.getStatus() + " desc=" + i.getDescription() + "\n";
+      try (java.io.FileOutputStream f = new java.io.FileOutputStream(lastLog, true)) { f.write(line.getBytes()); }
+      return;
+    }
+  }
 
   /** Shows/hides the game SurfaceView behind the web view and makes the web view transparent while the game is visible. */
   public static void surface(final boolean show, final float scale) {
@@ -68,6 +88,7 @@ public final class StarBridge {
   public static void launch(String jre, String log, String gameDir, String tmp, String renderer, String[] args) {
     Activity a = activity;
     if (a == null) return;
+    lastLog = log;
     Bundle b = new Bundle();
     b.putString("jre", jre); b.putString("log", log); b.putString("gameDir", gameDir); b.putString("tmp", tmp);
     b.putString("nativeDir", a.getApplicationInfo().nativeLibraryDir); b.putString("renderer", renderer);

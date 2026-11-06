@@ -278,8 +278,10 @@ mod imp {
         for a in args { argv.push(a.as_ptr() as *mut c_char); }
         argv.push(std::ptr::null_mut());
         let (full, dot, pname, lname) = (CString::new("21.0.1-internal").unwrap(), CString::new("21.0").unwrap(), CString::new("java").unwrap(), CString::new("openjdk").unwrap());
+        note(&format!("[star] JLI_Launch: java={jre}/bin/java, {} args", args.len()));
         let ret = launch((args.len() + 1) as c_int, argv.as_mut_ptr(), 0, std::ptr::null(), 0, std::ptr::null(),
             full.as_ptr(), dot.as_ptr(), pname.as_ptr(), lname.as_ptr(), 0, 1, 0, 0);
+        note(&format!("[star] JLI_Launch returned {ret}"));
         libc::fflush(std::ptr::null_mut());
         ret
     }
