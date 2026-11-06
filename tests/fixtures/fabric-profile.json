@@ -1,0 +1,17 @@
+{
+  "id": "fabric-loader-0.16.5-1.21.1",
+  "inheritsFrom": "1.21.1",
+  "type": "release",
+  "mainClass": "net.fabricmc.loader.impl.launch.knot.KnotClient",
+  "arguments": {
+    "jvm": [
+      "-DFabricMod=true"
+    ]
+  },
+  "libraries": [
+    {
+      "name": "net.fabricmc:fabric-loader:0.16.5",
+      "url": "https://maven.fabricmc.net/"
+    }
+  ]
+}
