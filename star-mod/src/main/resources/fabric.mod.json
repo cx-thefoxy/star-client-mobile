@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "id": "star-hud",
+  "version": "${version}",
+  "name": "Star HUD",
+  "description": "Client-side Star Client HUD for Minecraft 1.21.1.",
+  "authors": ["Star Client"],
+  "license": "MIT",
+  "environment": "client",
+  "entrypoints": {
+    "client": ["ir.starclient.hud.StarHudClient"]
+  },
+  "depends": {
+    "fabricloader": ">=0.16.0",
+    "minecraft": "~1.21.1",
+    "fabric-api": "*",
+    "java": ">=21"
+  }
+}
