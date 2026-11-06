@@ -177,7 +177,7 @@ mod tests {
     #[tokio::test]
     async fn search_contract_maps_http_failure_to_network_error() {
         let mut server = mockito::Server::new_async().await;
-        let mock = server.mock("GET", "/search").with_status(429).create_async().await;
+        let mock = server.mock("GET", "/search").match_query(mockito::Matcher::Any).with_status(429).create_async().await;
         let err = search_at(&client(), &server.url(), "x", "", "", 1).await.unwrap_err();
         mock.assert_async().await;
         assert!(matches!(err, AppError::Network(_)));
