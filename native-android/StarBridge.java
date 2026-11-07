@@ -57,17 +57,23 @@ public final class StarBridge {
       try {
         Process pr = Runtime.getRuntime().exec(new String[] { "logcat", "-d", "-v", "brief", "-t", "1500" });
         java.io.BufferedReader br = new java.io.BufferedReader(new java.io.InputStreamReader(pr.getInputStream()));
-        java.util.ArrayList<String> keep = new java.util.ArrayList<>();
+        java.util.ArrayList<String> all = new java.util.ArrayList<>();
         String ln;
-        while ((ln = br.readLine()) != null) {
-          String l = ln.toLowerCase();
-          if (l.startsWith("f/") || l.startsWith("e/") && (l.contains("pojav") || l.contains("star") || l.contains("jvm") || l.contains("lwjgl") || l.contains("glfw") || l.contains("egl"))
-              || l.contains("fatal signal") || l.contains("abort") || l.contains("backtrace") || l.contains("#0") && l.contains("pc ") || l.contains(" pc 0") || l.contains("libpojavexec") || l.contains("libjvm") || l.contains("libglfw") || l.contains("liblwjgl")) {
-            keep.add(ln);
+        while ((ln = br.readLine()) != null) all.add(ln.length() > 220 ? ln.substring(0, 220) : ln);
+        int sig = -1;
+        for (int k = all.size() - 1; k >= 0; k--) if (all.get(k).contains("Fatal signal")) { sig = k; break; }
+        StringBuilder sb = new StringBuilder("[star] crash head:\n");
+        if (sig >= 0) {
+          for (int k = Math.max(0, sig - 6); k < Math.min(all.size(), sig + 40); k++) {
+            String l = all.get(k);
+            if (l.contains("#") && l.contains(" pc ") && !(l.contains("#0") || l.contains("#1"))) continue; // only frames #0-#19
+            sb.append(l).append('\n');
           }
+        } else {
+          sb.append("(no 'Fatal signal' line visible to the app; last 25 error lines)\n");
+          int n = 0;
+          for (int k = all.size() - 1; k >= 0 && n < 25; k--) if (all.get(k).startsWith("E/") || all.get(k).startsWith("F/")) { sb.insert(sb.indexOf("\n") + 1, all.get(k) + "\n"); n++; }
         }
-        StringBuilder sb = new StringBuilder("[star] logcat:\n");
-        for (int k = Math.max(0, keep.size() - 60); k < keep.size(); k++) sb.append(keep.get(k)).append('\n');
         try (java.io.FileOutputStream f = new java.io.FileOutputStream(lastLog, true)) { f.write(sb.toString().getBytes()); }
       } catch (Throwable ignored) { }
       return;
