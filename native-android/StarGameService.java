@@ -141,7 +141,7 @@ public class StarGameService extends Service {
         a.add("-Dorg.lwjgl.vulkan.libname=libvulkan.so");
         a.add("-Dlog4j2.formatMsgNoLookups=true");
         if (extra != null) java.util.Collections.addAll(a, extra);
-        code = StarJvm.run(jre, a.toArray(new String[0]), log);
+        code = StarJvm.run(jre, StarJvm.fix(a.toArray(new String[0])), log);
       } catch (Throwable t) { note(log, "[star] " + t); }
       note(log, "\n[exit " + code + "]");
       android.os.Process.killProcess(android.os.Process.myPid());
