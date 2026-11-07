@@ -59,7 +59,7 @@ public final class StarBridge {
         java.io.BufferedReader br = new java.io.BufferedReader(new java.io.InputStreamReader(pr.getInputStream()));
         java.util.ArrayList<String> all = new java.util.ArrayList<>();
         String ln;
-        while ((ln = br.readLine()) != null) all.add(ln.length() > 220 ? ln.substring(0, 220) : ln);
+        while ((ln = br.readLine()) != null) all.add(ln.length() > 500 ? ln.substring(0, 500) : ln);
         int sig = -1;
         for (int k = all.size() - 1; k >= 0; k--) if (all.get(k).contains("Fatal signal")) { sig = k; break; }
         StringBuilder sb = new StringBuilder("[star] crash head:\n");

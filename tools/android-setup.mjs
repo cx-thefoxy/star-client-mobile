@@ -14,10 +14,14 @@ mkdirSync(PKG_DIR, { recursive: true });
 for (const f of ["StarBridge.java", "StarJvm.java", "StarInput.java", "StarGameSurface.java", "StarGameService.java", "StarGameClient.java"])
   cpSync(path.join("native-android", f), path.join(PKG_DIR, f));
 cpSync("native-android/MainActivity.kt", path.join(PKG_DIR, "MainActivity.kt"));
-for (const d of ["org", "net", "com"]) cpSync(path.join("native-android", d), path.join(`${MAIN}/java`, d), { recursive: true });
+for (const d of ["org", "net"]) cpSync(path.join("native-android", d), path.join(`${MAIN}/java`, d), { recursive: true });
 
 // 2. Pojav binaries (libpojavexec.so, libexithook.so, libbytehook.so, libgl4es_114.so, ...) and bundled runtimes
 if (existsSync("native-android/jniLibs")) cpSync("native-android/jniLibs", `${MAIN}/jniLibs`, { recursive: true });
+// ByteHook: Java class and libbytehook.so must come from the SAME release, so both come from the Maven artifact (added to Gradle below).
+// The loose .so from the Pojav APK is dropped and the old hand-written shim class must not exist (duplicate class).
+rmSync(`${MAIN}/jniLibs/arm64-v8a/libbytehook.so`, { force: true });
+rmSync(`${MAIN}/java/com/bytedance`, { recursive: true, force: true });
 if (existsSync("native-android/jre")) { rmSync(`${MAIN}/assets/jre`, { recursive: true, force: true }); cpSync("native-android/jre", `${MAIN}/assets/jre`, { recursive: true }); }
 
 // 2b. Pojav's patched GLFW classes (native-android/components/lwjgl3/lwjgl-glfw-classes.jar), prepended to the game classpath at launch
@@ -55,6 +59,10 @@ if (!g.includes("starSigning")) {
   g = g.replace(/getByName\("release"\)\s*\{/, 'getByName("release") {\n            signingConfig = signingConfigs.getByName("starSigning")');
 }
 g = g.replace(/versionCode\s*=\s*[^\n]+/, `versionCode = ${code}`).replace(/versionName\s*=\s*"[^"]*"/, `versionName = "${pkg.version}"`);
+if (!g.includes("bytedance:bytehook")) {
+  g = g.replace(/dependencies\s*\{/, 'dependencies {\n    implementation("com.bytedance:bytehook:1.0.9")');
+  g = g.replace("packaging { jniLibs { useLegacyPackaging = true } }", 'packaging { jniLibs { useLegacyPackaging = true; pickFirsts += "**/libbytehook.so" } }');
+}
 writeFileSync(gf, g);
 
 console.log(`Android project ready (versionName ${pkg.version}, versionCode ${code}).`);
