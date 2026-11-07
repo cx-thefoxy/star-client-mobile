@@ -27,6 +27,11 @@ public final class StarJvm {
    * 3) jna.nosys=true: do not use the old libjnidispatch.so (6.1.6) from the APK, JNA unpacks its own from the jar.
    */
   public static String[] fix(String[] args) {
+    // libpojavexec: pojavInitOpenGL() does strcmp(getenv("FORCE_VSYNC"), "true") and crashes (SIGSEGV, null) when it is unset.
+    try {
+      if (android.system.Os.getenv("FORCE_VSYNC") == null) android.system.Os.setenv("FORCE_VSYNC", "false", true);
+      if (android.system.Os.getenv("POJAV_RENDERER") == null) android.system.Os.setenv("POJAV_RENDERER", "opengles2", true);
+    } catch (Throwable ignored) { }
     String nat = nativeDir();
     ArrayList<String> out = new ArrayList<>();
     boolean lp = false, lw = false, jn = false;
