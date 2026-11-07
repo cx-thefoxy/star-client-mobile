@@ -259,7 +259,11 @@ mod imp {
             if fd >= 0 { libc::dup2(fd, 1); libc::dup2(fd, 2); }
         }
         std::env::set_var("JAVA_HOME", jre);
-        std::env::set_var("LD_LIBRARY_PATH", format!("{j}/lib:{j}/lib/server:{j}/lib/aarch64:{j}/lib/aarch64/server:{j}/lib/aarch64/jli", j = jre));
+        // libjli re-executes the java binary when LD_LIBRARY_PATH is set but does not start with the JVM directory ("trying to exec ...":
+        // Android forbids exec from the app data dir). With the variable unset it never re-executes. The libraries are found anyway:
+        // libjvm/libjli are dlopen'ed by absolute path below, the rest of the JRE uses $ORIGIN, and the service already registered the
+        // search path with the loader (JREUtils.setLdLibraryPath).
+        std::env::remove_var("LD_LIBRARY_PATH");
         let pick = |a: String, b: String| if Path::new(&a).exists() { a } else { b };
         let jvm = pick(format!("{jre}/lib/server/libjvm.so"), format!("{jre}/lib/aarch64/server/libjvm.so"));
         let jli = pick(format!("{jre}/lib/libjli.so"), format!("{jre}/lib/aarch64/jli/libjli.so"));

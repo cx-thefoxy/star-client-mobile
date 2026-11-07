@@ -115,6 +115,8 @@ public class StarGameService extends Service {
           java.io.File f = new java.io.File(nat, lib);
           if (f.exists() && !JREUtils.dlopen(f.getAbsolutePath())) note(log, "[star] dlopen failed: " + lib);
         }
+        new java.io.File(gameDir).mkdirs();
+        try { android.system.Os.chdir(gameDir); } catch (Throwable t) { note(log, "[star] chdir failed: " + t); }
         JREUtils.chdir(gameDir);
         note(log, "[star] step 4: setupExitMethod");
         JREUtils.setupExitMethod(getApplication());

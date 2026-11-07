@@ -54,6 +54,7 @@ public final class StarBridge {
           try (java.io.FileOutputStream f = new java.io.FileOutputStream(lastLog, true)) { f.write(sb.toString().getBytes()); }
         }
       } catch (Throwable ignored) { }
+      if (r != 4 && r != 5) return; // only a crash has a tombstone; a normal exit must not print old crashes from the logcat history
       try {
         Process pr = Runtime.getRuntime().exec(new String[] { "logcat", "-d", "-v", "brief", "-t", "1500" });
         java.io.BufferedReader br = new java.io.BufferedReader(new java.io.InputStreamReader(pr.getInputStream()));
@@ -61,7 +62,7 @@ public final class StarBridge {
         String ln;
         while ((ln = br.readLine()) != null) all.add(ln.length() > 500 ? ln.substring(0, 500) : ln);
         int sig = -1;
-        for (int k = all.size() - 1; k >= 0; k--) if (all.get(k).contains("Fatal signal")) { sig = k; break; }
+        for (int k = all.size() - 1; k >= 0; k--) if (all.get(k).contains("Fatal signal") && all.get(k).contains("pid " + i.getPid())) { sig = k; break; }
         StringBuilder sb = new StringBuilder("[star] crash head:\n");
         if (sig >= 0) {
           for (int k = Math.max(0, sig - 6); k < Math.min(all.size(), sig + 160); k++) {
