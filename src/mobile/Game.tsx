@@ -22,7 +22,6 @@ export default function Game() {
   // Cursor grab from the game: true = playing, false = a screen with a cursor (title menu, inventory, pause, chat...).
   const [grab, setGrab] = useState<boolean>(!!(window as unknown as { __starGrabState?: boolean }).__starGrabState);
   const [curCss, setCurCss] = useState<{ x: number; y: number } | null>(null);
-  const press = useRef<{ timer: number | null; sent: boolean }>({ timer: null, sent: false });
   const [ended, setEnded] = useState<string | null>(null);
   const tail = useRef<string[]>([]);
 
