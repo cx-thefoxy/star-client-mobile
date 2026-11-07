@@ -4,6 +4,8 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.os.IBinder;
 import android.os.Message;
 import android.os.Messenger;
@@ -15,6 +17,10 @@ final class StarGameClient {
   private static Messenger svc;
   private static boolean binding;
   private static Runnable pendingSurface, pendingLaunch;
+  /** Receives MSG_GRAB from the service and forwards it to the web UI. */
+  private static final Messenger reply = new Messenger(new Handler(Looper.getMainLooper()) {
+    @Override public void handleMessage(Message m) { if (m.what == StarGameService.MSG_GRAB) StarBridge.grab(m.arg1 == 1); }
+  });
 
   private StarGameClient() { }
 
@@ -24,7 +30,9 @@ final class StarGameClient {
     boolean ok = c.getApplicationContext().bindService(new Intent(c, StarGameService.class), new android.content.ServiceConnection() {
       @Override public void onServiceConnected(ComponentName n, IBinder b) {
         Runnable r, l;
-        synchronized (StarGameClient.class) { svc = new Messenger(b); binding = false; r = pendingSurface; pendingSurface = null; l = pendingLaunch; pendingLaunch = null; }
+        Messenger ms = new Messenger(b);
+        try { Message reg = Message.obtain(null, StarGameService.MSG_REGISTER); reg.replyTo = reply; ms.send(reg); } catch (Exception e) { Log.w("StarGameClient", e); }
+        synchronized (StarGameClient.class) { svc = ms; binding = false; r = pendingSurface; pendingSurface = null; l = pendingLaunch; pendingLaunch = null; }
         if (l != null) l.run();
         if (r != null) r.run();
       }

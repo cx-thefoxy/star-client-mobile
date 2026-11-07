@@ -18,11 +18,13 @@ import org.lwjgl.glfw.CallbackBridge;
  * Messenger: input events and the game Surface. See StarGameClient for the sending side.
  */
 public class StarGameService extends Service {
-  static final int MSG_INPUT = 1, MSG_SURFACE = 2, MSG_SURFACE_GONE = 3, MSG_LAUNCH = 4;
+  static final int MSG_INPUT = 1, MSG_SURFACE = 2, MSG_SURFACE_GONE = 3, MSG_LAUNCH = 4, MSG_REGISTER = 5, MSG_GRAB = 6;
   private static final String TAG = "StarGameService";
   private Surface surface;
   private Bundle launchData;
   private boolean started;
+  private volatile Messenger client;
+  private volatile boolean grab;
 
   private final Messenger messenger = new Messenger(new Handler(Looper.getMainLooper()) {
     @Override public void handleMessage(Message m) {
@@ -32,6 +34,7 @@ public class StarGameService extends Service {
           case MSG_SURFACE: surface(m.getData()); break;
           case MSG_SURFACE_GONE: gone(); break;
           case MSG_LAUNCH: launchData = m.getData(); tryStart(); break;
+          case MSG_REGISTER: client = m.replyTo; sendGrab(); break;
         }
       } catch (Throwable t) { Log.e(TAG, "msg " + m.what, t); }
     }
@@ -40,6 +43,14 @@ public class StarGameService extends Service {
   @Override public void onCreate() {
     super.onCreate();
     try { CallbackBridge.init(this); } catch (Throwable t) { Log.e(TAG, "CallbackBridge (is libpojavexec.so in jniLibs?)", t); }
+    // Cursor grab state (true = in game, false = a menu/inventory/pause screen): the UI process switches touch behavior and controls with it.
+    try { CallbackBridge.addGrabListener(g -> { grab = g; sendGrab(); }); } catch (Throwable t) { Log.e(TAG, "grab listener", t); }
+  }
+
+  private void sendGrab() {
+    Messenger c = client;
+    if (c == null) return;
+    try { c.send(Message.obtain(null, MSG_GRAB, grab ? 1 : 0, 0)); } catch (Exception e) { client = null; }
   }
 
   @Override public IBinder onBind(Intent i) { return messenger.getBinder(); }

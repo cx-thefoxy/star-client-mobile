@@ -16,9 +16,13 @@ const UI_ONLY = new Set(["Menu", "HIDE", "KEYBOARD", "Mouse", "1-9", "WASD"]);
 
 export const glfwKey = (k: string): number | undefined => GLFW[k];
 
+/** Last widget key pressed: the game screen uses it to tell Inventory (E) from Pause (Esc) when the cursor is released. */
+export const lastKey = { k: "", t: 0 };
+
 /** Press/release a widget key in the game. Unknown or UI-only keys are ignored. */
 export function sendWidgetKey(k: string, down: boolean) {
   if (UI_ONLY.has(k)) return;
+  if (down) { lastKey.k = k; lastKey.t = Date.now(); }
   if (k in MOUSE) { gameInput({ t: "mouse", button: MOUSE[k], down }); return; }
   if (k === "ScrollUp" || k === "ScrollDown") { if (down) gameInput({ t: "scroll", dy: k === "ScrollUp" ? 1 : -1 }); return; }
   const c = GLFW[k];

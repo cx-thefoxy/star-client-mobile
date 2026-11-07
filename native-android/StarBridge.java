@@ -115,6 +115,17 @@ public final class StarBridge {
     return null;
   }
 
+  /** Cursor grab state from the game (true = in game). Handed to the page as window.__starGrab(g); the page also reads window.__starGrabState. */
+  static void grab(final boolean g) {
+    final Activity a = activity;
+    if (a == null) return;
+    a.runOnUiThread(() -> {
+      ViewGroup content = a.findViewById(android.R.id.content);
+      android.webkit.WebView web = content == null ? null : findWebView(content);
+      if (web != null) web.evaluateJavascript("window.__starGrabState=" + g + ";if(window.__starGrab)window.__starGrab(" + g + ")", null);
+    });
+  }
+
   public static void input(String t, int key, int button, boolean down, float x, float y, double dy) {
     StarGameClient.input(t, key, button, down, x, y, dy);
   }

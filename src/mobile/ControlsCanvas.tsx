@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
 import { sendWidgetKey, joystickKeys } from "./keys";
-import { useControls, type Widget } from "./controls";
+import { useControls, ctxOf, type Ctx, type Widget } from "./controls";
 
 const clamp = (v: number, a: number, b: number) => Math.min(b, Math.max(a, v));
 const SW = 844, SH = 390;
@@ -69,7 +69,6 @@ function Item({ w, edit, snap, onKb }: { w: Widget; edit: boolean; snap: boolean
     e.currentTarget.setPointerCapture(e.pointerId);
     if (edit) { pick(w.id); if (hb) return; start.current = { px: e.clientX, py: e.clientY, x: w.x, y: w.y }; return; }
     if (hb) { const i = slotAt(e); setSlot(i); sendWidgetKey(String(i + 1), true); sendWidgetKey(String(i + 1), false); return; } // tap or drag on the hotbar picks the slot
-    if (w.key === "KEYBOARD") onKb();
     press(w.key);
     sendWidgetKey(w.key, w.toggle ? !down : true);
     setDown(w.toggle ? !down : true);
@@ -89,7 +88,7 @@ function Item({ w, edit, snap, onKb }: { w: Widget; edit: boolean; snap: boolean
       setMove(dx, dy, m);
     }
   };
-  const onUp = () => { start.current = null; if (!edit) { if (!w.toggle) { setDown(false); sendWidgetKey(w.key, false); } setKnob({ x: 0, y: 0 }); setMove(0, 0, 1); } };
+  const onUp = () => { start.current = null; if (!edit && w.key === "KEYBOARD") onKb(); /* on release: Android only opens the keyboard from a finished tap */ if (!edit) { if (!w.toggle) { setDown(false); sendWidgetKey(w.key, false); } setKnob({ x: 0, y: 0 }); setMove(0, 0, 1); } };
 
   const hDown = (e: React.PointerEvent) => { e.stopPropagation(); e.currentTarget.setPointerCapture(e.pointerId); size.current = { px: e.clientX, py: e.clientY, w: w.w, h: w.h }; };
   const hMove = (e: React.PointerEvent) => {
@@ -101,7 +100,7 @@ function Item({ w, edit, snap, onKb }: { w: Widget; edit: boolean; snap: boolean
   return (
     <div
       ref={box} className="ctl pointer-events-auto absolute" onPointerDown={onDown} onPointerMove={onMove} onPointerUp={onUp} onPointerCancel={onUp}
-      style={{ left: hb ? `calc(50% - ${bw0 / 2}px)` : `${w.x}%`, top: hb ? `calc(100% - ${bh0}px)` : `${w.y}%`, width: bw0, height: bh0, opacity: edit ? Math.max(w.opacity, 0.6) : w.opacity, zIndex: w.kind === "touchpad" ? 1 : 2 }}
+      style={{ left: hb ? `calc(50% - ${bw0 / 2}px)` : `min(${w.x}%, calc(100% - ${bw0}px))`, top: hb ? `calc(100% - ${bh0}px)` : `min(${w.y}%, calc(100% - ${bh0}px))`, width: bw0, height: bh0, opacity: edit ? Math.max(w.opacity, 0.6) : w.opacity, zIndex: w.kind === "touchpad" ? 1 : 2 }}
     >
       <Face w={hb ? { ...w, w: bw0, h: bh0 } : w} down={down} knob={knob} slot={slot} />
       {edit && editing === w.id && !hb && (
@@ -115,13 +114,13 @@ function Item({ w, edit, snap, onKb }: { w: Widget; edit: boolean; snap: boolean
   );
 }
 
-export default function ControlsCanvas({ edit, onKb, snap = false }: { edit: boolean; onKb: () => void; snap?: boolean }) {
+export default function ControlsCanvas({ edit, onKb, snap = false, ctx = "game" }: { edit: boolean; onKb: () => void; snap?: boolean; ctx?: Ctx }) {
   const { profiles, active, pick } = useControls();
   const p = profiles.find((x) => x.id === active)!;
   return (
     <div className={`absolute inset-0 ${edit ? "" : "pointer-events-none z-[35]"}`} onPointerDown={() => edit && pick(null)}>
       {edit && snap && <div className="pointer-events-none absolute inset-0" style={{ backgroundImage: "linear-gradient(to right, rgba(255,255,255,.07) 1px, transparent 1px), linear-gradient(to bottom, rgba(255,255,255,.07) 1px, transparent 1px)", backgroundSize: `${(SW * 2) / 100}px ${(SH * 4) / 100}px` }} />}
-      {p.widgets.map((w) => <Item key={w.id} w={w} edit={edit} snap={snap} onKb={onKb} />)}
+      {p.widgets.filter((w) => ctxOf(w) === ctx).map((w) => <Item key={w.id} w={w} edit={edit} snap={snap} onKb={onKb} />)}
     </div>
   );
 }

@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { Pause, Play, Pencil, LogOut } from "lucide-react";
 import ControlsCanvas, { gamePx } from "./ControlsCanvas";
-import OnScreenKeyboard from "./OnScreenKeyboard";
+import NativeKeyboard, { toggleKeyboard } from "./NativeKeyboard";
+import { lastKey } from "./keys";
 import { useControls } from "./controls";
 import { gameInput, gameSurface, stopGame } from "./native";
 import { onGameExit, onGameLog } from "../services/tauri";
@@ -12,12 +13,16 @@ import { useApp } from "../store/app";
  * drag = look (or move the cursor and click when "tap to click" is on), widgets = keys, joystick = WASD.
  */
 export default function Game() {
-  const { resScale, menuMode, setMenuMode, hideOnScreenUI } = useControls();
+  const { resScale, menuMode, setMenuMode, hideOnScreenUI, ctx, setCtx } = useControls();
   const setPage = useApp((s) => s.setPage);
   const look = useRef<{ id: number; x: number; y: number; moved: number } | null>(null);
   const cur = useRef({ x: 0, y: 0 });
   const [paused, setPaused] = useState(false);
-  const [kb, setKb] = useState(false);
+  const [, setKb] = useState(false);
+  // Cursor grab from the game: true = playing, false = a screen with a cursor (title menu, inventory, pause, chat...).
+  const [grab, setGrab] = useState<boolean>(!!(window as unknown as { __starGrabState?: boolean }).__starGrabState);
+  const [curCss, setCurCss] = useState({ x: -50, y: -50 });
+  const press = useRef<{ timer: number | null; sent: boolean }>({ timer: null, sent: false });
   const [ended, setEnded] = useState<string | null>(null);
   const tail = useRef<string[]>([]);
 
@@ -27,6 +32,19 @@ export default function Game() {
     document.body.style.background = "transparent";
     return () => { gameSurface(false); document.documentElement.style.background = ""; document.body.style.background = ""; };
   }, [resScale]);
+
+  useEffect(() => {
+    const w = window as unknown as { __starGrab?: (g: boolean) => void };
+    w.__starGrab = (g) => setGrab(g);
+    return () => { delete w.__starGrab; };
+  }, []);
+
+  // Which screen is open decides which buttons show: cursor released after E = inventory, after Esc = pause, anything else = menu.
+  useEffect(() => {
+    if (grab) { setCtx("game"); return; }
+    const recent = Date.now() - lastKey.t < 1500;
+    setCtx(recent && lastKey.k === "E" ? "inventory" : recent && lastKey.k === "Esc" ? "pause" : "menu");
+  }, [grab, setCtx]);
 
   useEffect(() => {
     const subs = [
@@ -40,31 +58,46 @@ export default function Game() {
   const quit = () => { void stopGame(); setPage("home"); };
   const item = "flex h-10 w-full items-center gap-2 rounded-lg bg-control px-3 text-sm hover:bg-control-hover";
 
+  // Absolute mode (a tap is a click at that spot): whenever the game shows a cursor screen, or when forced in Settings / by the toggle.
+  const absolute = menuMode || !grab;
+  const clickAt = (down: boolean) => gameInput({ t: "mouse", button: 0, down });
   const down = (e: React.PointerEvent) => {
     if (paused || look.current) return;
     look.current = { id: e.pointerId, x: e.clientX, y: e.clientY, moved: 0 };
-    if (menuMode) { cur.current = { x: e.clientX * k, y: e.clientY * k }; gameInput({ t: "cursor", ...cur.current }); gameInput({ t: "mouse", button: 0, down: true }); }
+    if (absolute) {
+      cur.current = { x: e.clientX * k, y: e.clientY * k };
+      setCurCss({ x: e.clientX, y: e.clientY });
+      gameInput({ t: "cursor", ...cur.current });
+      // let the game see the cursor on the button first (hover), then press
+      press.current.sent = false;
+      press.current.timer = window.setTimeout(() => { press.current.timer = null; press.current.sent = true; clickAt(true); }, 45);
+    }
   };
   const move = (e: React.PointerEvent) => {
     const l = look.current; if (!l || l.id !== e.pointerId) return;
     const dx = e.clientX - l.x, dy = e.clientY - l.y; look.current = { ...l, x: e.clientX, y: e.clientY, moved: l.moved + Math.abs(dx) + Math.abs(dy) };
-    if (menuMode) cur.current = { x: e.clientX * k, y: e.clientY * k };
+    if (absolute) { cur.current = { x: e.clientX * k, y: e.clientY * k }; setCurCss({ x: e.clientX, y: e.clientY }); }
     else cur.current = { x: cur.current.x + dx * k, y: cur.current.y + dy * k };
     gameInput({ t: "cursor", ...cur.current });
   };
   const up = (e: React.PointerEvent) => {
     if (look.current?.id !== e.pointerId) return;
     look.current = null;
-    if (menuMode) gameInput({ t: "mouse", button: 0, down: false });
+    if (!absolute) return;
+    const pr = press.current;
+    if (pr.timer !== null) { window.clearTimeout(pr.timer); pr.timer = null; clickAt(true); window.setTimeout(() => clickAt(false), 45); } // quick tap: press now, release shortly after
+    else if (pr.sent) clickAt(false);
+    pr.sent = false;
   };
 
   return (
     <div className="relative h-full w-full overflow-hidden" style={{ touchAction: "none" }} onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerCancel={up}>
-      {!hideOnScreenUI && <ControlsCanvas edit={false} onKb={() => setKb((v) => !v)} />}
-      {kb && <OnScreenKeyboard />}
+      {!hideOnScreenUI && <ControlsCanvas edit={false} onKb={toggleKeyboard} ctx={ctx} />}
+      <NativeKeyboard onOpen={() => setKb(true)} onClose={() => setKb(false)} />
+      {absolute && !paused && <div className="pointer-events-none absolute z-[37] h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-black bg-white shadow" style={{ left: curCss.x, top: curCss.y }} />}
       <button onClick={() => setMenuMode(!menuMode)} aria-pressed={menuMode} onPointerDown={(e) => e.stopPropagation()}
         className="absolute left-1/2 top-2 z-[36] flex h-7 -translate-x-1/2 items-center gap-1.5 rounded-lg bg-black/50 px-3 text-[11px] font-medium text-white">
-        <span className={`h-2 w-2 rounded-full ${menuMode ? "bg-green-400" : "bg-white/40"}`} />Tap to click: {menuMode ? "ON" : "OFF"}
+        <span className={`h-2 w-2 rounded-full ${menuMode ? "bg-green-400" : "bg-white/40"}`} />Tap to click: {absolute ? "ON" : "OFF"}
       </button>
       <button onClick={() => setPaused(true)} onPointerDown={(e) => e.stopPropagation()} className="absolute left-2 top-2 z-20 flex h-8 w-8 items-center justify-center rounded-lg bg-black/60 text-white"><Pause size={14} /></button>
       {ended !== null && (

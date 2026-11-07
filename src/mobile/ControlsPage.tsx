@@ -1,12 +1,12 @@
 import { useRef } from "react";
 import { Check, Copy, Download, Import, Pencil, Plus, Trash2 } from "lucide-react";
-import { useControls, parseProfile, type Profile } from "./controls";
+import { useControls, parseProfile, ctxOf, type Profile } from "./controls";
 import { useApp } from "../store/app";
 
 function Preview({ p }: { p: Profile }) {
   return (
     <div className="relative mb-2 aspect-[844/390] w-full overflow-hidden rounded-lg border border-line" style={{ background: "linear-gradient(#2b3a52, #3a5a2e 55%, #3b2a1a)" }}>
-      {p.widgets.map((w) => (
+      {p.widgets.filter((w) => ctxOf(w) === "game").map((w) => (
         <div key={w.id} style={{ left: `${w.x}%`, top: `${w.y}%`, width: `${(w.w / 844) * 100}%`, height: `${(w.h / 390) * 100}%`, opacity: w.kind === "touchpad" ? 0.25 : 0.8 }}
           className={`absolute border border-white/70 ${w.kind === "touchpad" ? "bg-white/20" : "bg-white/10"} ${w.round ? "rounded-full" : "rounded-[2px]"}`} />
       ))}

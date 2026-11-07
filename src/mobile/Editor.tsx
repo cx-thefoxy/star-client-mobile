@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { ArrowLeft, Copy, Grid3x3, Plus, RotateCcw, Trash2, X, Zap, Check } from "lucide-react";
-import { useControls, PRESETS, PACKS, type Kind, type Widget } from "./controls";
+import { useControls, PRESETS, PACKS, CTXS, ctxOf, type Kind, type Widget } from "./controls";
 import { useApp } from "../store/app";
 import ControlsCanvas, { Face, radiusOf } from "./ControlsCanvas";
 
@@ -91,29 +91,32 @@ function AddDialog({ onClose }: { onClose: () => void }) {
 }
 
 export default function Editor({ openAdd = false, openCustom = false }: { openAdd?: boolean; openCustom?: boolean }) {
-  const { profiles, active, editing, pick, addWidget, addPack, duplicateWidget, patchWidget, removeWidget, resetProfile } = useControls();
+  const { profiles, active, editing, pick, addWidget, addPack, duplicateWidget, patchWidget, removeWidget, resetProfile, editCtx, setEditCtx } = useControls();
   const setPage = useApp((s) => s.setPage);
   const [quick, setQuick] = useState(openAdd);
   const [custom, setCustom] = useState(openCustom);
   const [snap, setSnap] = useState(false);
   const [added, setAdded] = useState<Record<string, number>>({});
   const p = profiles.find((x) => x.id === active)!;
-  const w = p.widgets.find((x) => x.id === editing);
+  const w = p.widgets.find((x) => x.id === editing && ctxOf(x) === editCtx);
   const btn = "flex h-8 items-center gap-1.5 rounded-lg bg-black/60 px-3 text-xs font-medium backdrop-blur hover:bg-black/80";
   const bump = (k: string) => setAdded((o) => ({ ...o, [k]: (o[k] ?? 0) + 1 }));
 
   return (
     <div className="relative h-full w-full overflow-hidden bg-bg">
       <div className="absolute inset-0 bg-black/60" />
-      <ControlsCanvas edit onKb={() => {}} snap={snap} />
+      <ControlsCanvas edit onKb={() => {}} snap={snap} ctx={editCtx} />
       <div className="absolute inset-x-0 top-0 z-30 flex items-center gap-2 p-2">
         <button className={btn} onClick={() => setPage("controls")}><ArrowLeft size={14} />Back</button>
-        <div className={`${btn} pointer-events-none`}>Editing: {p.name}</div>
+        <div className={`${btn} pointer-events-none max-w-[110px] truncate`}>{p.name}</div>
+        <div className="flex gap-1 rounded-xl bg-black/60 p-1 backdrop-blur">
+          {CTXS.map((c) => <button key={c.id} onClick={() => { setEditCtx(c.id); setQuick(false); }} className={`h-6 rounded-lg px-2 text-[11px] font-medium ${editCtx === c.id ? "bg-accent text-accent-ink" : "text-white/80"}`}>{c.label}</button>)}
+        </div>
         <div className="flex-1" />
-        <button className={btn} onClick={() => { setQuick((v) => !v); pick(null); }}><Zap size={14} />Quick add</button>
-        <button className={btn} onClick={() => { setCustom(true); setQuick(false); pick(null); }}><Plus size={14} />Add</button>
-        <button className={`${btn} ${snap ? "!bg-white !text-black" : ""}`} onClick={() => setSnap((v) => !v)} aria-label="Snap to grid"><Grid3x3 size={14} />Snap</button>
-        <button className={btn} onClick={resetProfile}><RotateCcw size={14} />Reset</button>
+        <button className={btn} onClick={() => { setQuick((v) => !v); pick(null); }} aria-label="Quick add"><Zap size={14} /></button>
+        <button className={btn} onClick={() => { setCustom(true); setQuick(false); pick(null); }} aria-label="Add"><Plus size={14} /></button>
+        <button className={`${btn} ${snap ? "!bg-white !text-black" : ""}`} onClick={() => setSnap((v) => !v)} aria-label="Snap to grid"><Grid3x3 size={14} /></button>
+        <button className={btn} onClick={resetProfile} aria-label={`Reset ${editCtx} layout`}><RotateCcw size={14} /></button>
         
       </div>
 
@@ -167,7 +170,7 @@ export default function Editor({ openAdd = false, openCustom = false }: { openAd
           </div>
         </div>
       )}
-      {!w && !quick && !custom && <div className="pointer-events-none absolute bottom-[58px] left-1/2 z-30 -translate-x-1/2 rounded-full bg-black/60 px-3 py-1 text-[11px] text-white/80">Drag to move · tap to edit · drag the dot to resize</div>}
+      {!w && !quick && !custom && <div className="pointer-events-none absolute bottom-[58px] left-1/2 z-30 -translate-x-1/2 rounded-full bg-black/60 px-3 py-1 text-[11px] text-white/80">{editCtx === "game" ? "In game" : editCtx === "inventory" ? "Inventory" : editCtx === "pause" ? "Pause menu" : "Menus, chat, death screen"} · drag to move · tap to edit · drag the dot to resize</div>}
     </div>
   );
 }
