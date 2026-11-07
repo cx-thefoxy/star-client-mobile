@@ -14,7 +14,7 @@ mkdirSync(PKG_DIR, { recursive: true });
 for (const f of ["StarBridge.java", "StarJvm.java", "StarInput.java", "StarGameSurface.java", "StarGameService.java", "StarGameClient.java"])
   cpSync(path.join("native-android", f), path.join(PKG_DIR, f));
 cpSync("native-android/MainActivity.kt", path.join(PKG_DIR, "MainActivity.kt"));
-for (const d of ["org", "net"]) cpSync(path.join("native-android", d), path.join(`${MAIN}/java`, d), { recursive: true });
+for (const d of ["org", "net", "com"]) cpSync(path.join("native-android", d), path.join(`${MAIN}/java`, d), { recursive: true });
 
 // 2. Pojav binaries (libpojavexec.so, libexithook.so, libbytehook.so, libgl4es_114.so, ...) and bundled runtimes
 if (existsSync("native-android/jniLibs")) cpSync("native-android/jniLibs", `${MAIN}/jniLibs`, { recursive: true });
@@ -23,6 +23,11 @@ if (existsSync("native-android/jre")) { rmSync(`${MAIN}/assets/jre`, { recursive
 // 2b. Pojav's patched GLFW classes (native-android/components/lwjgl3/lwjgl-glfw-classes.jar), prepended to the game classpath at launch
 if (existsSync("native-android/components")) { rmSync(`${MAIN}/assets/components`, { recursive: true, force: true }); cpSync("native-android/components", `${MAIN}/assets/components`, { recursive: true }); }
 else console.warn("WARNING: native-android/components/lwjgl3/lwjgl-glfw-classes.jar is missing: the game cannot open a window without it.");
+
+// 2c. R8 must not strip classes that only native code refers to (libpojavexec / libbytehook look them up by name)
+const pro = `${A}/proguard-rules.pro`;
+const keep = "\n# star: classes looked up from native code\n-keep class net.kdt.pojavlaunch.** { *; }\n-keep class org.lwjgl.** { *; }\n-keep class com.bytedance.** { *; }\n-keep class app.starclient.mobile.** { *; }\n";
+if (existsSync(pro)) { const cur = readFileSync(pro, "utf8"); if (!cur.includes("com.bytedance")) writeFileSync(pro, cur + keep); } else writeFileSync(pro, keep);
 
 // 3. Launcher icons
 cpSync("native-android/res", `${MAIN}/res`, { recursive: true });
