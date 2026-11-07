@@ -45,6 +45,11 @@ jobs:
           echo "NDK_HOME=$NDK_HOME"
           npx tauri android build --apk --target aarch64 --debug --ci
           npx tauri android build --apk --target aarch64 --ci
+      - name: Show real Gradle error
+        if: failure()
+        run: |
+          cd src-tauri/gen/android
+          ./gradlew --console=plain --no-daemon :app:assembleArm64Debug 2>&1 | grep -E "error:|warning: \[|What went wrong|FAILED|Execution failed|Caused by|\.java:|\.kt:|Could not" -A4 | head -80 || true
       - name: Collect
         run: |
           D=$(find src-tauri/gen/android -name "*-debug.apk" | head -1); cp "$D" StarClient-debug.apk
