@@ -40,6 +40,8 @@ cpSync("native-android/res", `${MAIN}/res`, { recursive: true });
 const mf = `${MAIN}/AndroidManifest.xml`;
 let m = readFileSync(mf, "utf8");
 m = m.replace(/android:allowBackup="[^"]*"/, 'android:allowBackup="false"');
+// OpenJDK strips pointer tag bits before free(): with Android's heap pointer tagging (targetSdk 30+) that aborts ("Pointer tag ... was truncated"). Same fix as PojavLauncher.
+if (!m.includes("allowNativeHeapPointerTagging")) m = m.replace("<application", '<application\n        android:allowNativeHeapPointerTagging="false"');
 if (!m.includes("extractNativeLibs")) m = m.replace("<application", '<application\n        android:extractNativeLibs="true"\n        android:largeHeap="true"');
 if (!m.includes("screenOrientation")) m = m.replace("<activity", '<activity\n            android:screenOrientation="sensorLandscape"');
 if (!m.includes("StarGameService")) m = m.replace("</application>", '    <service android:name=".StarGameService" android:process=":jvm" android:exported="false" />\n    </application>');
