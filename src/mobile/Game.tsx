@@ -1,8 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Pause, Play, Pencil, LogOut } from "lucide-react";
 import ControlsCanvas, { gamePx } from "./ControlsCanvas";
-import NativeKeyboard, { toggleKeyboard } from "./NativeKeyboard";
-import { lastKey } from "./keys";
+import OnScreenKeyboard from "./OnScreenKeyboard";
 import { useControls } from "./controls";
 import { gameInput, gameSurface, stopGame } from "./native";
 import { onGameExit, onGameLog } from "../services/tauri";
@@ -13,16 +12,12 @@ import { useApp } from "../store/app";
  * drag = look (or move the cursor and click when "tap to click" is on), widgets = keys, joystick = WASD.
  */
 export default function Game() {
-  const { resScale, menuMode, hideOnScreenUI, ctx, setCtx } = useControls();
+  const { resScale, menuMode, setMenuMode, hideOnScreenUI } = useControls();
   const setPage = useApp((s) => s.setPage);
   const look = useRef<{ id: number; x: number; y: number; moved: number } | null>(null);
   const cur = useRef({ x: 0, y: 0 });
   const [paused, setPaused] = useState(false);
-  const [, setKb] = useState(false);
-  // Cursor grab from the game: true = playing, false = a screen with a cursor (title menu, inventory, pause, chat...).
-  const [grab, setGrab] = useState<boolean>(!!(window as unknown as { __starGrabState?: boolean }).__starGrabState);
-  const [curCss, setCurCss] = useState<{ x: number; y: number } | null>(null);
-  const press = useRef<{ timer: number | null; sent: boolean }>({ timer: null, sent: false });
+  const [kb, setKb] = useState(false);
   const [ended, setEnded] = useState<string | null>(null);
   const tail = useRef<string[]>([]);
 
@@ -32,20 +27,6 @@ export default function Game() {
     document.body.style.background = "transparent";
     return () => { gameSurface(false); document.documentElement.style.background = ""; document.body.style.background = ""; };
   }, [resScale]);
-
-  useEffect(() => {
-    const w = window as unknown as { __starGrab?: (g: boolean) => void };
-    w.__starGrab = (g) => setGrab(g);
-    return () => { delete w.__starGrab; };
-  }, []);
-
-  // Which screen is open decides which buttons show: cursor released after E = inventory, after Esc = pause, anything else = menu.
-  useEffect(() => {
-    if (grab) { setCtx("game"); return; }
-    // Guess from the control that was tapped just before the cursor was released (the chip below corrects a wrong guess).
-    const age = Date.now() - lastKey.t, k0 = lastKey.k;
-    setCtx((k0 === "E" && age < 2500) || (k0 === "RMB" && age < 1200) ? "inventory" : k0 === "Esc" && age < 2500 ? "pause" : "menu"); // RMB = chest, crafting table, villager...
-  }, [grab, setCtx]);
 
   useEffect(() => {
     const subs = [
@@ -59,47 +40,65 @@ export default function Game() {
   const quit = () => { void stopGame(); setPage("home"); };
   const item = "flex h-10 w-full items-center gap-2 rounded-lg bg-control px-3 text-sm hover:bg-control-hover";
 
-  // Absolute mode (a tap is a click at that spot): whenever the game shows a cursor screen, or when forced in Settings / by the toggle.
-  const absolute = menuMode || !grab;
-  const clickAt = (down: boolean) => gameInput({ t: "mouse", button: 0, down });
+  // Touchpad mode ("Mouse ON"): the finger moves the cursor RELATIVELY (anywhere on screen), tap = click at the cursor,
+  // two quick taps = double click, press-and-hold = hold the button (drag items). "Mouse OFF": drag = look around.
+  const ptr = useRef<HTMLDivElement>(null);
+  const holdT = useRef<number | undefined>(undefined);
+  const holding = useRef(false);
+  const t0 = useRef(0);
+  const showCur = () => { if (ptr.current) ptr.current.style.transform = `translate(${cur.current.x / k}px,${cur.current.y / k}px)`; };
+  const clamp = () => {
+    cur.current = { x: Math.min(Math.max(cur.current.x, 0), window.innerWidth * k), y: Math.min(Math.max(cur.current.y, 0), window.innerHeight * k) };
+  };
+  const click = () => {
+    gameInput({ t: "cursor", ...cur.current });
+    gameInput({ t: "mouse", button: 0, down: true });
+    window.setTimeout(() => gameInput({ t: "mouse", button: 0, down: false }), 45);
+  };
+  useEffect(() => {
+    if (menuMode && cur.current.x === 0 && cur.current.y === 0) { cur.current = { x: (window.innerWidth / 2) * k, y: (window.innerHeight / 2) * k }; }
+    showCur();
+    if (menuMode) gameInput({ t: "cursor", ...cur.current });
+  }, [menuMode, k]);
+
   const down = (e: React.PointerEvent) => {
     if (paused || look.current) return;
     look.current = { id: e.pointerId, x: e.clientX, y: e.clientY, moved: 0 };
-    if (absolute) {
-      cur.current = { x: e.clientX * k, y: e.clientY * k };
-      setCurCss({ x: e.clientX, y: e.clientY });
-      gameInput({ t: "cursor", ...cur.current });
-      // let the game see the cursor on the button first (hover), then press
-      press.current.sent = false;
-      press.current.timer = window.setTimeout(() => { press.current.timer = null; press.current.sent = true; gameInput({ t: "cursor", ...cur.current }); clickAt(true); }, 45);
+    t0.current = Date.now(); holding.current = false;
+    if (menuMode) {
+      holdT.current = window.setTimeout(() => {
+        if ((look.current?.moved ?? 99) < 12) { holding.current = true; gameInput({ t: "cursor", ...cur.current }); gameInput({ t: "mouse", button: 0, down: true }); }
+      }, 450);
     }
   };
   const move = (e: React.PointerEvent) => {
     const l = look.current; if (!l || l.id !== e.pointerId) return;
     const dx = e.clientX - l.x, dy = e.clientY - l.y; look.current = { ...l, x: e.clientX, y: e.clientY, moved: l.moved + Math.abs(dx) + Math.abs(dy) };
-    if (absolute) { cur.current = { x: e.clientX * k, y: e.clientY * k }; setCurCss({ x: e.clientX, y: e.clientY }); }
+    if (menuMode) { const g = 1.6; cur.current = { x: cur.current.x + dx * k * g, y: cur.current.y + dy * k * g }; clamp(); showCur(); }
     else cur.current = { x: cur.current.x + dx * k, y: cur.current.y + dy * k };
     gameInput({ t: "cursor", ...cur.current });
   };
   const up = (e: React.PointerEvent) => {
-    if (look.current?.id !== e.pointerId) return;
+    const l = look.current;
+    if (l?.id !== e.pointerId) return;
     look.current = null;
-    if (!absolute) return;
-    const pr = press.current;
-    if (pr.timer !== null) { window.clearTimeout(pr.timer); pr.timer = null; gameInput({ t: "cursor", ...cur.current }); clickAt(true); window.setTimeout(() => clickAt(false), 80); } // quick tap: press now, release shortly after
-    else if (pr.sent) clickAt(false);
-    pr.sent = false;
+    window.clearTimeout(holdT.current);
+    if (!menuMode) return;
+    if (holding.current) { holding.current = false; gameInput({ t: "mouse", button: 0, down: false }); return; }
+    if (l.moved < 12 && Date.now() - t0.current < 400 && e.type === "pointerup") click();
   };
 
   return (
     <div className="relative h-full w-full overflow-hidden" style={{ touchAction: "none" }} onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerCancel={up}>
-      {!hideOnScreenUI && <ControlsCanvas edit={false} onKb={toggleKeyboard} ctx={ctx} />}
-      <NativeKeyboard onOpen={() => setKb(true)} onClose={() => setKb(false)} />
-      {!grab && !paused && curCss && (
-        <svg className="pointer-events-none absolute z-[37]" width="22" height="22" viewBox="0 0 24 24" style={{ left: curCss.x - 3, top: curCss.y - 2 }}>
-          <path d="M3 2l7.5 19 2.6-7.4L21 11z" fill="#fff" stroke="#000" strokeWidth="1.6" strokeLinejoin="round" />
-        </svg>
-      )}
+      {!hideOnScreenUI && <ControlsCanvas edit={false} onKb={() => setKb((v) => !v)} />}
+      {kb && <OnScreenKeyboard />}
+      {menuMode && <div ref={ptr} className="pointer-events-none absolute left-0 top-0 z-[34]" style={{ willChange: "transform" }}>
+        <svg width="22" height="22" viewBox="0 0 22 22"><path d="M2 2 L2 17 L6.5 13 L9.5 20 L12 19 L9 12 L15 12 Z" fill="white" stroke="black" strokeWidth="1.2" /></svg>
+      </div>}
+      <button onClick={() => setMenuMode(!menuMode)} aria-pressed={menuMode} onPointerDown={(e) => e.stopPropagation()}
+        className="absolute left-1/2 top-2 z-[36] flex h-7 -translate-x-1/2 items-center gap-1.5 rounded-lg bg-black/50 px-3 text-[11px] font-medium text-white">
+        <span className={`h-2 w-2 rounded-full ${menuMode ? "bg-green-400" : "bg-white/40"}`} />Mouse: {menuMode ? "ON" : "OFF"}
+      </button>
       <button onClick={() => setPaused(true)} onPointerDown={(e) => e.stopPropagation()} className="absolute left-2 top-2 z-20 flex h-8 w-8 items-center justify-center rounded-lg bg-black/60 text-white"><Pause size={14} /></button>
       {ended !== null && (
         <div className="absolute inset-0 z-[45] flex items-center justify-center bg-black/70 p-3" onPointerDown={(e) => e.stopPropagation()}>
