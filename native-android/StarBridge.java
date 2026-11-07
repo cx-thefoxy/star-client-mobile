@@ -45,6 +45,15 @@ public final class StarBridge {
       int r = i.getReason();
       String line = "\n[star] :jvm process ended: reason=" + (r >= 0 && r < names.length ? names[r] : String.valueOf(r)) + " status=" + i.getStatus() + " desc=" + i.getDescription() + "\n";
       try (java.io.FileOutputStream f = new java.io.FileOutputStream(lastLog, true)) { f.write(line.getBytes()); }
+      try {
+        java.io.File hs = new java.io.File(lastLog + ".hs_err");
+        if (hs.exists()) {
+          java.util.List<String> ls = java.nio.file.Files.readAllLines(hs.toPath());
+          StringBuilder sb = new StringBuilder("[star] hs_err:\n");
+          for (int k = 0; k < Math.min(ls.size(), 45); k++) sb.append(ls.get(k)).append('\n');
+          try (java.io.FileOutputStream f = new java.io.FileOutputStream(lastLog, true)) { f.write(sb.toString().getBytes()); }
+        }
+      } catch (Throwable ignored) { }
       return;
     }
   }
