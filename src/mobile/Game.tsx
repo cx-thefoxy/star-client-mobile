@@ -42,8 +42,9 @@ export default function Game() {
   // Which screen is open decides which buttons show: cursor released after E = inventory, after Esc = pause, anything else = menu.
   useEffect(() => {
     if (grab) { setCtx("game"); return; }
-    const recent = Date.now() - lastKey.t < 1500;
-    setCtx(recent && lastKey.k === "E" ? "inventory" : recent && lastKey.k === "Esc" ? "pause" : "menu");
+    // Guess from the control that was tapped just before the cursor was released (the chip below corrects a wrong guess).
+    const age = Date.now() - lastKey.t, k0 = lastKey.k;
+    setCtx((k0 === "E" && age < 2500) || (k0 === "RMB" && age < 1200) ? "inventory" : k0 === "Esc" && age < 2500 ? "pause" : "menu"); // RMB = chest, crafting table, villager...
   }, [grab, setCtx]);
 
   useEffect(() => {
@@ -99,6 +100,12 @@ export default function Game() {
         className="absolute left-1/2 top-2 z-[36] flex h-7 -translate-x-1/2 items-center gap-1.5 rounded-lg bg-black/50 px-3 text-[11px] font-medium text-white">
         <span className={`h-2 w-2 rounded-full ${menuMode ? "bg-green-400" : "bg-white/40"}`} />Tap to click: {absolute ? "ON" : "OFF"}
       </button>
+      {!grab && !paused && (
+        <button onClick={() => setCtx(ctx === "inventory" ? "pause" : ctx === "pause" ? "menu" : "inventory")} onPointerDown={(e) => e.stopPropagation()}
+          className="absolute left-1/2 top-10 z-[36] flex h-7 -translate-x-1/2 items-center rounded-lg bg-black/50 px-3 text-[11px] font-medium text-white">
+          Screen: {ctx === "inventory" ? "Inventory" : ctx === "pause" ? "Pause" : "Menu"} · tap to change
+        </button>
+      )}
       <button onClick={() => setPaused(true)} onPointerDown={(e) => e.stopPropagation()} className="absolute left-2 top-2 z-20 flex h-8 w-8 items-center justify-center rounded-lg bg-black/60 text-white"><Pause size={14} /></button>
       {ended !== null && (
         <div className="absolute inset-0 z-[45] flex items-center justify-center bg-black/70 p-3" onPointerDown={(e) => e.stopPropagation()}>
