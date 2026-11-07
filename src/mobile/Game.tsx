@@ -80,7 +80,7 @@ export default function Game() {
   };
   const up = (e: React.PointerEvent) => {
     const l = look.current;
-    if (l?.id !== e.pointerId) return;
+    if (!l || l.id !== e.pointerId) return;
     look.current = null;
     window.clearTimeout(holdT.current);
     if (!menuMode) return;
