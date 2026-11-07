@@ -64,8 +64,11 @@ public final class StarBridge {
         for (int k = all.size() - 1; k >= 0; k--) if (all.get(k).contains("Fatal signal")) { sig = k; break; }
         StringBuilder sb = new StringBuilder("[star] crash head:\n");
         if (sig >= 0) {
-          for (int k = Math.max(0, sig - 6); k < Math.min(all.size(), sig + 40); k++) {
+          for (int k = Math.max(0, sig - 6); k < Math.min(all.size(), sig + 160); k++) {
             String l = all.get(k);
+            String body = l.contains("): ") ? l.substring(l.indexOf("): ") + 3).trim() : l.trim();
+            if (body.matches("^(x\\d+|lr|sp|pc|pst|r\\d+|fp|ip)\\s.*")) continue; // CPU registers: no use
+            if (body.startsWith("memory near") || body.matches("^[0-9a-f]{8,16}\\s.*")) continue; // memory dumps
             if (l.contains("#") && l.contains(" pc ") && !(l.contains("#0") || l.contains("#1"))) continue; // only frames #0-#19
             sb.append(l).append('\n');
           }

@@ -25,7 +25,12 @@ pub async fn report(st: &AppState) -> String {
         r += &format!("  - {:?} {} loader {:?} {:?} star {}\n", i.name, i.version_id, i.loader, i.loader_version, i.star_mod_enabled);
     }
     r += "\nRecent launcher log:\n";
-    if let Some(tail) = latest_log_tail(&st.paths.logs, 80) { r += &tail; }
+    if let Some(tail) = latest_log_tail(&st.paths.logs, 12) { r += &truncate_lines(&tail, 400); }
+    r += "\n\nLast game log (start of the newest launch-*.log, then its end):\n";
+    match latest_game_log(&st.paths.logs.join("game")) {
+        Some(g) => r += &g,
+        None => r += "(no game log yet)\n",
+    }
     redact(&r)
 }
 
@@ -36,4 +41,21 @@ fn latest_log_tail(dir: &std::path::Path, lines: usize) -> Option<String> {
     let text = std::fs::read_to_string(newest.path()).ok()?;
     let v: Vec<&str> = text.lines().collect();
     Some(v[v.len().saturating_sub(lines)..].join("\n"))
+}
+
+/// Long single lines (the launch command with its classpath) are cut so the real messages stay readable.
+fn truncate_lines(t: &str, max: usize) -> String {
+    t.lines().map(|l| if l.len() > max { format!("{}... [{} chars]", &l[..l.char_indices().nth(max).map_or(l.len(), |(i, _)| i)], l.len()) } else { l.to_string() })
+        .collect::<Vec<_>>().join("\n")
+}
+
+/// Whole newest game log: first 120 lines (the [star] steps) and last 220 lines (crash head / exit reason), long lines cut.
+fn latest_game_log(dir: &std::path::Path) -> Option<String> {
+    let newest = std::fs::read_dir(dir).ok()?.flatten()
+        .filter(|e| e.file_name().to_string_lossy().starts_with("launch-"))
+        .max_by_key(|e| e.metadata().and_then(|m| m.modified()).ok())?;
+    let text = String::from_utf8_lossy(&std::fs::read(newest.path()).ok()?).into_owned();
+    let v: Vec<String> = truncate_lines(&text, 300).lines().map(String::from).collect();
+    if v.len() <= 340 { return Some(v.join("\n")); }
+    Some(format!("{}\n... [{} lines skipped] ...\n{}", v[..120].join("\n"), v.len() - 340, v[v.len() - 220..].join("\n")))
 }
