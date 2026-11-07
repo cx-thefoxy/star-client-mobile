@@ -18,11 +18,15 @@ import org.lwjgl.glfw.CallbackBridge;
  * Messenger: input events and the game Surface. See StarGameClient for the sending side.
  */
 public class StarGameService extends Service {
-  static final int MSG_INPUT = 1, MSG_SURFACE = 2, MSG_SURFACE_GONE = 3, MSG_LAUNCH = 4;
+  static final int MSG_INPUT = 1, MSG_SURFACE = 2, MSG_SURFACE_GONE = 3, MSG_LAUNCH = 4, MSG_REGISTER = 5, MSG_GRAB = 6;
   private static final String TAG = "StarGameService";
   private Surface surface;
   private Bundle launchData;
   private boolean started;
+  private volatile Messenger client;
+  private volatile boolean grab;
+  private volatile String logPath;
+  private int nCursor, nMouse, nKey;
 
   private final Messenger messenger = new Messenger(new Handler(Looper.getMainLooper()) {
     @Override public void handleMessage(Message m) {
@@ -31,15 +35,24 @@ public class StarGameService extends Service {
           case MSG_INPUT: input(m.getData()); break;
           case MSG_SURFACE: surface(m.getData()); break;
           case MSG_SURFACE_GONE: gone(); break;
-          case MSG_LAUNCH: launchData = m.getData(); tryStart(); break;
+          case MSG_LAUNCH: launchData = m.getData(); logPath = launchData.getString("log"); tryStart(); break;
+          case MSG_REGISTER: client = m.replyTo; sendGrab(); break;
         }
-      } catch (Throwable t) { Log.e(TAG, "msg " + m.what, t); }
+      } catch (Throwable t) { Log.e(TAG, "msg " + m.what, t); String l = logPath; if (l != null) note(l, "[star] input error (msg " + m.what + "): " + t); }
     }
   });
 
   @Override public void onCreate() {
     super.onCreate();
     try { CallbackBridge.init(this); } catch (Throwable t) { Log.e(TAG, "CallbackBridge (is libpojavexec.so in jniLibs?)", t); }
+    // Cursor grab state (true = in game, false = a menu/inventory/pause screen): the UI process switches touch behavior and controls with it.
+    try { CallbackBridge.addGrabListener(g -> { grab = g; sendGrab(); }); } catch (Throwable t) { Log.e(TAG, "grab listener", t); }
+  }
+
+  private void sendGrab() {
+    Messenger c = client;
+    if (c == null) return;
+    try { c.send(Message.obtain(null, MSG_GRAB, grab ? 1 : 0, 0)); } catch (Exception e) { client = null; }
   }
 
   @Override public IBinder onBind(Intent i) { return messenger.getBinder(); }
@@ -47,6 +60,13 @@ public class StarGameService extends Service {
   private void input(Bundle b) throws Exception {
     String t = b.getString("t", "");
     boolean down = b.getBoolean("down");
+    // Diagnostics (first events only): shows in the game log whether touch input reaches this process
+    String l = logPath;
+    if (l != null) {
+      if ("cursor".equals(t) && nCursor++ < 3) note(l, "[star] input cursor " + b.getFloat("x") + "," + b.getFloat("y") + " grab=" + grab);
+      else if ("mouse".equals(t) && nMouse++ < 30) note(l, "[star] input mouse btn=" + b.getInt("button") + " down=" + down + " grab=" + grab);
+      else if ("key".equals(t) && nKey++ < 20) note(l, "[star] input key " + b.getInt("key") + " down=" + down);
+    }
     if ("key".equals(t)) StarInput.key(b.getInt("key"), down);
     else if ("mouse".equals(t)) StarInput.mouse(b.getInt("button"), down);
     else if ("cursor".equals(t)) StarInput.cursor(b.getFloat("x"), b.getFloat("y"));
@@ -129,7 +149,7 @@ public class StarGameService extends Service {
         a.add("-Djava.awt.headless=true");
         a.add("-Dorg.lwjgl.librarypath=" + nat);                 // arm64 liblwjgl*.so first (the Mojang natives-linux jars are x86_64)
         a.add("-Dorg.lwjgl.system.allocator=system");            // no liblwjgl_jemalloc.so is bundled: do not try to load it
-        a.add("-Djna.nosys=true");                               // never use the (older) libjnidispatch.so found in nativeLibDir
+        a.add("-Djna.nosys=true");
         a.add("-Dorg.lwjgl.openal.libname=" + nat + "/libopenal.so");
         a.add("-Dorg.lwjgl.opengl.libname=" + gl);
         a.add("-Dorg.lwjgl.freetype.libname=" + nat + "/libfreetype.so");
@@ -139,15 +159,8 @@ public class StarGameService extends Service {
         a.add("-Dos.name=Linux");
         a.add("-Dorg.lwjgl.vulkan.libname=libvulkan.so");
         a.add("-Dlog4j2.formatMsgNoLookups=true");
-        if (extra != null) {
-          for (String e : extra) {
-            // The patched GLFW classes call System.loadLibrary("pojavexec") from inside the JVM: nativeLibDir must be on java.library.path
-            // (first, so the arm64 liblwjgl*.so win over the x86_64 ones the Mojang natives jars extract into the version folder).
-            if (e.startsWith("-Djava.library.path=")) a.add("-Djava.library.path=" + nat + ":" + e.substring("-Djava.library.path=".length()));
-            else a.add(e);
-          }
-        }
-        code = StarJvm.run(jre, a.toArray(new String[0]), log);
+        if (extra != null) java.util.Collections.addAll(a, extra);
+        code = StarJvm.run(jre, StarJvm.fix(a.toArray(new String[0])), log);
       } catch (Throwable t) { note(log, "[star] " + t); }
       note(log, "\n[exit " + code + "]");
       android.os.Process.killProcess(android.os.Process.myPid());
