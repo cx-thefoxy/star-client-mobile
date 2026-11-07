@@ -1,7 +1,0 @@
-{
-  "$schema": "../gen/schemas/mobile-schema.json",
-  "identifier": "default",
-  "description": "Minimal permissions for the main window. File, process, network and URL access are handled by validated Rust commands.",
-  "windows": ["main"],
-  "permissions": ["core:event:default"]
-}

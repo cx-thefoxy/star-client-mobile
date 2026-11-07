@@ -90,10 +90,15 @@ public class StarGameService extends Service {
       int code = -99;
       try {
         String jre = d.getString("jre"), nat = d.getString("nativeDir"), gameDir = d.getString("gameDir");
+        note(log, "[star] step 1: :jvm process up, pid " + android.os.Process.myPid() + ", abi " + android.os.Build.SUPPORTED_ABIS[0]);
+        String[] so = new java.io.File(nat).list();
+        if (so != null) java.util.Arrays.sort(so);
+        note(log, "[star] nativeLibDir " + nat + ": " + (so == null ? "(unreadable)" : String.join(" ", so)));
         String gl = d.getString("renderer", "").toLowerCase().contains("ltw") && new java.io.File(nat, "libltw.so").exists() ? "libltw.so" : "libgl4es_114.so"; // LTW not bundled -> gl4es
         java.io.File glFile = new java.io.File(nat, gl);
         if (!new java.io.File(nat, "libpojavexec.so").exists()) throw new Exception("libpojavexec.so is missing in jniLibs/arm64-v8a (see native-android/jniLibs).");
         if (!glFile.exists()) throw new Exception(gl + " is missing in jniLibs/arm64-v8a (renderer).");
+        note(log, "[star] step 2: environment");
         android.system.Os.setenv("POJAV_NATIVEDIR", nat, true);
         android.system.Os.setenv("JAVA_HOME", jre, true);
         android.system.Os.setenv("HOME", gameDir, true);
@@ -105,16 +110,23 @@ public class StarGameService extends Service {
         android.system.Os.setenv("AWTSTUB_WIDTH", String.valueOf(CallbackBridge.windowWidth), true);
         android.system.Os.setenv("AWTSTUB_HEIGHT", String.valueOf(CallbackBridge.windowHeight), true);
         JREUtils.setLdLibraryPath(jre + "/lib/server:" + jre + "/lib:" + jre + "/lib/jli:" + jre + "/lib/aarch64/server:" + jre + "/lib/aarch64:" + jre + "/lib/aarch64/jli:/system/lib64:/vendor/lib64:" + nat);
+        note(log, "[star] step 3: preloading libs");
         for (String lib : new String[] { "libopenal.so", "libfreetype.so", gl }) {
           java.io.File f = new java.io.File(nat, lib);
           if (f.exists() && !JREUtils.dlopen(f.getAbsolutePath())) note(log, "[star] dlopen failed: " + lib);
         }
         JREUtils.chdir(gameDir);
+        note(log, "[star] step 4: setupExitMethod");
         JREUtils.setupExitMethod(getApplication());
+        note(log, "[star] step 5: initializeHooks");
         JREUtils.initializeHooks();
+        note(log, "[star] step 6: hooks ready, starting JVM");
         String[] extra = d.getStringArray("args");
         java.util.ArrayList<String> a = new java.util.ArrayList<>();
         a.add("-Djava.io.tmpdir=" + d.getString("tmp"));
+        a.add("-XX:+UseSerialGC");
+        a.add("-Djava.awt.headless=true");
+        a.add("-Dorg.lwjgl.librarypath=" + nat);
         a.add("-Dorg.lwjgl.opengl.libname=" + gl);
         a.add("-Dorg.lwjgl.freetype.libname=" + nat + "/libfreetype.so");
         a.add("-Dglfwstub.windowWidth=" + CallbackBridge.windowWidth);
