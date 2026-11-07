@@ -13,7 +13,7 @@ import { useApp } from "../store/app";
  * drag = look (or move the cursor and click when "tap to click" is on), widgets = keys, joystick = WASD.
  */
 export default function Game() {
-  const { resScale, menuMode, setMenuMode, hideOnScreenUI, ctx, setCtx } = useControls();
+  const { resScale, menuMode, hideOnScreenUI, ctx, setCtx } = useControls();
   const setPage = useApp((s) => s.setPage);
   const look = useRef<{ id: number; x: number; y: number; moved: number } | null>(null);
   const cur = useRef({ x: 0, y: 0 });
@@ -21,7 +21,7 @@ export default function Game() {
   const [, setKb] = useState(false);
   // Cursor grab from the game: true = playing, false = a screen with a cursor (title menu, inventory, pause, chat...).
   const [grab, setGrab] = useState<boolean>(!!(window as unknown as { __starGrabState?: boolean }).__starGrabState);
-  const [curCss, setCurCss] = useState({ x: -50, y: -50 });
+  const [curCss, setCurCss] = useState<{ x: number; y: number } | null>(null);
   const press = useRef<{ timer: number | null; sent: boolean }>({ timer: null, sent: false });
   const [ended, setEnded] = useState<string | null>(null);
   const tail = useRef<string[]>([]);
@@ -71,7 +71,7 @@ export default function Game() {
       gameInput({ t: "cursor", ...cur.current });
       // let the game see the cursor on the button first (hover), then press
       press.current.sent = false;
-      press.current.timer = window.setTimeout(() => { press.current.timer = null; press.current.sent = true; clickAt(true); }, 45);
+      press.current.timer = window.setTimeout(() => { press.current.timer = null; press.current.sent = true; gameInput({ t: "cursor", ...cur.current }); clickAt(true); }, 45);
     }
   };
   const move = (e: React.PointerEvent) => {
@@ -86,7 +86,7 @@ export default function Game() {
     look.current = null;
     if (!absolute) return;
     const pr = press.current;
-    if (pr.timer !== null) { window.clearTimeout(pr.timer); pr.timer = null; clickAt(true); window.setTimeout(() => clickAt(false), 45); } // quick tap: press now, release shortly after
+    if (pr.timer !== null) { window.clearTimeout(pr.timer); pr.timer = null; gameInput({ t: "cursor", ...cur.current }); clickAt(true); window.setTimeout(() => clickAt(false), 80); } // quick tap: press now, release shortly after
     else if (pr.sent) clickAt(false);
     pr.sent = false;
   };
@@ -95,16 +95,10 @@ export default function Game() {
     <div className="relative h-full w-full overflow-hidden" style={{ touchAction: "none" }} onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerCancel={up}>
       {!hideOnScreenUI && <ControlsCanvas edit={false} onKb={toggleKeyboard} ctx={ctx} />}
       <NativeKeyboard onOpen={() => setKb(true)} onClose={() => setKb(false)} />
-      {absolute && !paused && <div className="pointer-events-none absolute z-[37] h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-black bg-white shadow" style={{ left: curCss.x, top: curCss.y }} />}
-      <button onClick={() => setMenuMode(!menuMode)} aria-pressed={menuMode} onPointerDown={(e) => e.stopPropagation()}
-        className="absolute left-1/2 top-2 z-[36] flex h-7 -translate-x-1/2 items-center gap-1.5 rounded-lg bg-black/50 px-3 text-[11px] font-medium text-white">
-        <span className={`h-2 w-2 rounded-full ${menuMode ? "bg-green-400" : "bg-white/40"}`} />Tap to click: {absolute ? "ON" : "OFF"}
-      </button>
-      {!grab && !paused && (
-        <button onClick={() => setCtx(ctx === "inventory" ? "pause" : ctx === "pause" ? "menu" : "inventory")} onPointerDown={(e) => e.stopPropagation()}
-          className="absolute left-1/2 top-10 z-[36] flex h-7 -translate-x-1/2 items-center rounded-lg bg-black/50 px-3 text-[11px] font-medium text-white">
-          Screen: {ctx === "inventory" ? "Inventory" : ctx === "pause" ? "Pause" : "Menu"} · tap to change
-        </button>
+      {!grab && !paused && curCss && (
+        <svg className="pointer-events-none absolute z-[37]" width="22" height="22" viewBox="0 0 24 24" style={{ left: curCss.x - 3, top: curCss.y - 2 }}>
+          <path d="M3 2l7.5 19 2.6-7.4L21 11z" fill="#fff" stroke="#000" strokeWidth="1.6" strokeLinejoin="round" />
+        </svg>
       )}
       <button onClick={() => setPaused(true)} onPointerDown={(e) => e.stopPropagation()} className="absolute left-2 top-2 z-20 flex h-8 w-8 items-center justify-center rounded-lg bg-black/60 text-white"><Pause size={14} /></button>
       {ended !== null && (

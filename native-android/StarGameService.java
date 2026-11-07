@@ -25,6 +25,8 @@ public class StarGameService extends Service {
   private boolean started;
   private volatile Messenger client;
   private volatile boolean grab;
+  private volatile String logPath;
+  private int nCursor, nMouse, nKey;
 
   private final Messenger messenger = new Messenger(new Handler(Looper.getMainLooper()) {
     @Override public void handleMessage(Message m) {
@@ -33,10 +35,10 @@ public class StarGameService extends Service {
           case MSG_INPUT: input(m.getData()); break;
           case MSG_SURFACE: surface(m.getData()); break;
           case MSG_SURFACE_GONE: gone(); break;
-          case MSG_LAUNCH: launchData = m.getData(); tryStart(); break;
+          case MSG_LAUNCH: launchData = m.getData(); logPath = launchData.getString("log"); tryStart(); break;
           case MSG_REGISTER: client = m.replyTo; sendGrab(); break;
         }
-      } catch (Throwable t) { Log.e(TAG, "msg " + m.what, t); }
+      } catch (Throwable t) { Log.e(TAG, "msg " + m.what, t); String l = logPath; if (l != null) note(l, "[star] input error (msg " + m.what + "): " + t); }
     }
   });
 
@@ -58,6 +60,13 @@ public class StarGameService extends Service {
   private void input(Bundle b) throws Exception {
     String t = b.getString("t", "");
     boolean down = b.getBoolean("down");
+    // Diagnostics (first events only): shows in the game log whether touch input reaches this process
+    String l = logPath;
+    if (l != null) {
+      if ("cursor".equals(t) && nCursor++ < 3) note(l, "[star] input cursor " + b.getFloat("x") + "," + b.getFloat("y") + " grab=" + grab);
+      else if ("mouse".equals(t) && nMouse++ < 30) note(l, "[star] input mouse btn=" + b.getInt("button") + " down=" + down + " grab=" + grab);
+      else if ("key".equals(t) && nKey++ < 20) note(l, "[star] input key " + b.getInt("key") + " down=" + down);
+    }
     if ("key".equals(t)) StarInput.key(b.getInt("key"), down);
     else if ("mouse".equals(t)) StarInput.mouse(b.getInt("button"), down);
     else if ("cursor".equals(t)) StarInput.cursor(b.getFloat("x"), b.getFloat("y"));
