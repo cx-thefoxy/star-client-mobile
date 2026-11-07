@@ -127,7 +127,11 @@ public class StarGameService extends Service {
         a.add("-Djava.io.tmpdir=" + d.getString("tmp"));
         a.add("-XX:+UseSerialGC");
         a.add("-Djava.awt.headless=true");
-        a.add("-Dorg.lwjgl.librarypath=" + nat);
+        a.add("-Dorg.lwjgl.librarypath=" + nat);                 // arm64 liblwjgl*.so first (the Mojang natives-linux jars are x86_64)
+        a.add("-Dorg.lwjgl.system.allocator=system");            // no liblwjgl_jemalloc.so is bundled: do not try to load it
+        a.add("-Djna.boot.library.path=" + nat);                 // libjnidispatch.so (bionic build) for JNA / OSHI
+        a.add("-Djna.nosys=true");
+        a.add("-Dorg.lwjgl.openal.libname=" + nat + "/libopenal.so");
         a.add("-Dorg.lwjgl.opengl.libname=" + gl);
         a.add("-Dorg.lwjgl.freetype.libname=" + nat + "/libfreetype.so");
         a.add("-Dglfwstub.windowWidth=" + CallbackBridge.windowWidth);

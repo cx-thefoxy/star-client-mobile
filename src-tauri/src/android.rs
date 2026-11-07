@@ -267,11 +267,23 @@ mod imp {
         let pick = |a: String, b: String| if Path::new(&a).exists() { a } else { b };
         let jvm = pick(format!("{jre}/lib/server/libjvm.so"), format!("{jre}/lib/aarch64/server/libjvm.so"));
         let jli = pick(format!("{jre}/lib/libjli.so"), format!("{jre}/lib/aarch64/jli/libjli.so"));
+        // Directory with libjava.so, libnet.so, libnio.so ... (Java 21: <jre>/lib, Java 8: <jre>/lib/aarch64; libjli sits in its "jli" subfolder there).
+        let jli_dir = Path::new(&jli).parent().map(|p| p.to_string_lossy().into_owned()).unwrap_or_default();
+        let libdir = if jli_dir.ends_with("/jli") { Path::new(&jli_dir).parent().map(|p| p.to_string_lossy().into_owned()).unwrap_or(jli_dir.clone()) } else { jli_dir };
         let (jvm_c, jli_c) = (CString::new(jvm).unwrap(), CString::new(jli).unwrap());
         let flags = libc::RTLD_NOW | libc::RTLD_GLOBAL;
         if libc::dlopen(jvm_c.as_ptr(), flags).is_null() { note(&format!("dlopen libjvm failed: {}", dl_err())); return -2; }
         let h = libc::dlopen(jli_c.as_ptr(), flags);
         if h.is_null() { note(&format!("dlopen libjli failed: {}", dl_err())); return -3; }
+        // Android's loader does not search the JRE directory for dependencies of the JRE's own libraries (libnio needs libnet ...). Like
+        // PojavLauncher, load them up front, in dependency order, by absolute path: later lookups by soname then find them already loaded.
+        for lib in ["libverify.so", "libjava.so", "libzip.so", "libjimage.so", "libnet.so", "libnio.so", "libextnet.so", "libmanagement.so", "libmanagement_ext.so", "libinstrument.so", "libprefs.so", "libsunec.so"] {
+            let full = format!("{libdir}/{lib}");
+            if !Path::new(&full).exists() { continue; }
+            if let Ok(c) = CString::new(full.clone()) {
+                if libc::dlopen(c.as_ptr(), flags).is_null() { note(&format!("[star] preload {lib} failed: {}", dl_err())); }
+            }
+        }
         let sym = libc::dlsym(h, b"JLI_Launch\0".as_ptr() as *const c_char);
         if sym.is_null() { note("JLI_Launch not found"); return -4; }
         let launch: JliLaunch = std::mem::transmute(sym);
