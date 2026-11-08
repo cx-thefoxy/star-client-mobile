@@ -58,65 +58,80 @@ export default function Game() {
   const quit = () => { void stopGame(); setPage("home"); };
   const item = "flex h-10 w-full items-center gap-2 rounded-lg bg-control px-3 text-sm hover:bg-control-hover";
 
-  // Touchpad mode ("Mouse ON", or automatically whenever the game shows a cursor screen): the finger moves the cursor RELATIVELY from
-  // wherever it is, a tap clicks at the cursor, two quick taps = double click, press-and-hold = hold the button (drag items).
-  // Mouse OFF + playing: dragging looks around.
-  const absolute = menuMode || !grab;
+  // On a cursor screen (title menu, inventory, pause...) the finger works in one of two ways, chosen with the "Mouse" button:
+  //  ON  = touchpad: the finger moves a visible cursor RELATIVELY, tap = click at the cursor, two quick taps = double click, hold = drag.
+  //  OFF = direct touch: no cursor, you tap the game's buttons right where they are (two quick taps = double click).
+  // While playing (cursor grabbed) dragging always looks around.
+  const touchpad = !grab && menuMode;
+  const direct = !grab && !menuMode;
   const holdT = useRef<number | undefined>(undefined);
+  const pressT = useRef<number | undefined>(undefined);
   const holding = useRef(false);
+  const pressed = useRef(false);
   const t0 = useRef(0);
   const clampCur = () => { cur.current = { x: Math.min(Math.max(cur.current.x, 0), window.innerWidth * k), y: Math.min(Math.max(cur.current.y, 0), window.innerHeight * k) }; };
+  const sendPos = () => gameInput({ t: "cursor", ...cur.current });
+  // The game needs to see the cursor on the widget for a moment (hover) before the press, and the press must last a few frames.
   const clickNow = () => {
-    gameInput({ t: "cursor", ...cur.current });
-    gameInput({ t: "mouse", button: 0, down: true });
-    window.setTimeout(() => gameInput({ t: "mouse", button: 0, down: false }), 45);
+    sendPos();
+    window.setTimeout(() => { sendPos(); gameInput({ t: "mouse", button: 0, down: true }); }, 70);
+    window.setTimeout(() => gameInput({ t: "mouse", button: 0, down: false }), 190);
   };
   useEffect(() => {
-    if (!absolute) return;
+    if (!touchpad) return;
     if (cur.current.x === 0 && cur.current.y === 0) cur.current = { x: (window.innerWidth / 2) * k, y: (window.innerHeight / 2) * k };
     setCurCss({ x: cur.current.x / k, y: cur.current.y / k });
-    gameInput({ t: "cursor", ...cur.current });
-  }, [absolute, k]);
+    sendPos();
+  }, [touchpad, k]);
 
   const down = (e: React.PointerEvent) => {
     if (paused || look.current) return;
     look.current = { id: e.pointerId, x: e.clientX, y: e.clientY, moved: 0 };
-    t0.current = Date.now(); holding.current = false;
-    if (absolute) {
+    t0.current = Date.now(); holding.current = false; pressed.current = false;
+    if (touchpad) {
       holdT.current = window.setTimeout(() => {
-        if ((look.current?.moved ?? 99) < 12) { holding.current = true; gameInput({ t: "cursor", ...cur.current }); gameInput({ t: "mouse", button: 0, down: true }); }
+        if ((look.current?.moved ?? 99) < 12) { holding.current = true; sendPos(); gameInput({ t: "mouse", button: 0, down: true }); }
       }, 450);
+    } else if (direct) {
+      cur.current = { x: e.clientX * k, y: e.clientY * k };
+      sendPos();
+      pressT.current = window.setTimeout(() => { pressT.current = undefined; pressed.current = true; sendPos(); gameInput({ t: "mouse", button: 0, down: true }); }, 70);
     }
   };
   const move = (e: React.PointerEvent) => {
     const l = look.current; if (!l || l.id !== e.pointerId) return;
     const dx = e.clientX - l.x, dy = e.clientY - l.y; look.current = { ...l, x: e.clientX, y: e.clientY, moved: l.moved + Math.abs(dx) + Math.abs(dy) };
-    if (absolute) { const g = 1.6; cur.current = { x: cur.current.x + dx * k * g, y: cur.current.y + dy * k * g }; clampCur(); setCurCss({ x: cur.current.x / k, y: cur.current.y / k }); }
+    if (touchpad) { const g = 1.6; cur.current = { x: cur.current.x + dx * k * g, y: cur.current.y + dy * k * g }; clampCur(); setCurCss({ x: cur.current.x / k, y: cur.current.y / k }); }
+    else if (direct) cur.current = { x: e.clientX * k, y: e.clientY * k };
     else cur.current = { x: cur.current.x + dx * k, y: cur.current.y + dy * k };
-    gameInput({ t: "cursor", ...cur.current });
+    sendPos();
   };
   const up = (e: React.PointerEvent) => {
     const l = look.current;
     if (!l || l.id !== e.pointerId) return;
     look.current = null;
     window.clearTimeout(holdT.current);
-    if (!absolute) return;
-    if (holding.current) { holding.current = false; gameInput({ t: "mouse", button: 0, down: false }); return; }
-    if (l.moved < 12 && Date.now() - t0.current < 400 && e.type === "pointerup") clickNow();
+    if (touchpad) {
+      if (holding.current) { holding.current = false; gameInput({ t: "mouse", button: 0, down: false }); return; }
+      if (l.moved < 12 && Date.now() - t0.current < 400 && e.type === "pointerup") clickNow();
+    } else if (direct) {
+      if (pressT.current !== undefined) { window.clearTimeout(pressT.current); pressT.current = undefined; clickNow(); }
+      else if (pressed.current) { pressed.current = false; window.setTimeout(() => gameInput({ t: "mouse", button: 0, down: false }), 60); }
+    }
   };
 
   return (
     <div className="relative h-full w-full overflow-hidden" style={{ touchAction: "none" }} onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerCancel={up}>
       {!hideOnScreenUI && <ControlsCanvas edit={false} onKb={toggleKeyboard} ctx={ctx} />}
       <NativeKeyboard onOpen={() => setKb(true)} onClose={() => setKb(false)} />
-      {absolute && !paused && curCss && (
+      {touchpad && !paused && curCss && (
         <svg className="pointer-events-none absolute z-[37]" width="22" height="22" viewBox="0 0 24 24" style={{ left: curCss.x - 3, top: curCss.y - 2 }}>
           <path d="M3 2l7.5 19 2.6-7.4L21 11z" fill="#fff" stroke="#000" strokeWidth="1.6" strokeLinejoin="round" />
         </svg>
       )}
       <button onClick={() => setMenuMode(!menuMode)} aria-pressed={menuMode} onPointerDown={(e) => e.stopPropagation()}
         className="absolute left-1/2 top-2 z-[36] flex h-7 -translate-x-1/2 items-center gap-1.5 rounded-lg bg-black/50 px-3 text-[11px] font-medium text-white">
-        <span className={`h-2 w-2 rounded-full ${menuMode ? "bg-green-400" : "bg-white/40"}`} />Mouse: {menuMode ? "ON" : "AUTO"}
+        <span className={`h-2 w-2 rounded-full ${menuMode ? "bg-green-400" : "bg-white/40"}`} />Mouse: {menuMode ? "ON" : "OFF"}
       </button>
       <button onClick={() => setPaused(true)} onPointerDown={(e) => e.stopPropagation()} className="absolute left-2 top-2 z-20 flex h-8 w-8 items-center justify-center rounded-lg bg-black/60 text-white"><Pause size={14} /></button>
       {ended !== null && (
