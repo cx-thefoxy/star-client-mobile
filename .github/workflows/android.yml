@@ -55,8 +55,8 @@ jobs:
           set -o pipefail
           # Gradle's download server sometimes answers 504: retry a failed build up to 3 times (a retry also reuses the Rust build).
           retry() { for i in 1 2 3; do "$@" && return 0; echo "::warning::build attempt $i failed, retrying in 30s"; sleep 30; done; return 1; }
-          retry bash -c 'npx tauri android build --apk --target aarch64 --debug --ci 2>&1 | tee -a build.log'
-          retry bash -c 'npx tauri android build --apk --target aarch64 --ci 2>&1 | tee -a build.log'
+          retry bash -c 'set -o pipefail; npx tauri android build --apk --target aarch64 --debug --ci 2>&1 | tee -a build.log'
+          retry bash -c 'set -o pipefail; npx tauri android build --apk --target aarch64 --ci 2>&1 | tee -a build.log'
       - name: Show real build error
         if: failure()
         run: |
