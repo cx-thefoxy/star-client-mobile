@@ -85,8 +85,12 @@ export default function Game() {
   }, [touchpad, k]);
 
   const down = (e: React.PointerEvent) => {
-    if (paused || look.current) return;
+    if (paused) return;
+    window.clearTimeout(holdT.current); window.clearTimeout(pressT.current);
+    if (holding.current) { holding.current = false; gameInput({ t: "mouse", button: 0, down: false }); }
+    if (pressed.current) { pressed.current = false; gameInput({ t: "mouse", button: 0, down: false }); }
     look.current = { id: e.pointerId, x: e.clientX, y: e.clientY, moved: 0 };
+    try { (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId); } catch { /* not capturable */ }
     t0.current = Date.now(); holding.current = false; pressed.current = false;
     if (touchpad) {
       holdT.current = window.setTimeout(() => {

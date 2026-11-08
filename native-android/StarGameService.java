@@ -63,8 +63,8 @@ public class StarGameService extends Service {
     // Diagnostics (first events only): shows in the game log whether touch input reaches this process
     String l = logPath;
     if (l != null) {
-      if ("cursor".equals(t) && nCursor++ < 3) note(l, "[star] input cursor " + b.getFloat("x") + "," + b.getFloat("y") + " grab=" + grab);
-      else if ("mouse".equals(t) && nMouse++ < 30) note(l, "[star] input mouse btn=" + b.getInt("button") + " down=" + down + " grab=" + grab);
+      if ("cursor".equals(t) && nCursor++ < 15) note(l, "[star] input cursor " + b.getFloat("x") + "," + b.getFloat("y") + " grab=" + grab);
+      else if ("mouse".equals(t) && nMouse++ < 80) note(l, "[star] input mouse btn=" + b.getInt("button") + " down=" + down + " grab=" + grab);
       else if ("key".equals(t) && nKey++ < 20) note(l, "[star] input key " + b.getInt("key") + " down=" + down);
     }
     if ("key".equals(t)) StarInput.key(b.getInt("key"), down);
