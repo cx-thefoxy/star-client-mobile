@@ -46,6 +46,25 @@ jobs:
         run: npx tauri android init --ci
       - name: Patch Android project
         run: node tools/android-setup.mjs
+      - name: Pre-download Gradle (the official server answers 504 now and then)
+        run: |
+          P=src-tauri/gen/android/gradle/wrapper/gradle-wrapper.properties
+          cat "$P"
+          URL=$(grep '^distributionUrl=' "$P" | cut -d= -f2- | sed 's#\\:#:#g')
+          F=/tmp/$(basename "$URL")
+          ok=0
+          for u in "$URL" "${URL/services.gradle.org/downloads.gradle.org}" "${URL/services.gradle.org\/distributions/downloads.gradle.org\/distributions}"; do
+            for i in 1 2 3 4 5; do
+              if curl -fsSL --retry 3 --retry-all-errors --connect-timeout 20 -o "$F" "$u" && unzip -tq "$F" >/dev/null 2>&1; then ok=1; break 2; fi
+              echo "download failed ($u, try $i), waiting"; sleep 15
+            done
+          done
+          if [ "$ok" = 1 ]; then
+            sed -i "s#^distributionUrl=.*#distributionUrl=file\\://$F#" "$P"
+            echo "using local copy $F"; grep '^distributionUrl=' "$P"
+          else
+            echo "::warning::could not pre-download Gradle, falling back to the wrapper download"
+          fi
       - name: Build APK (debug + release, arm64)
         env:
           STAR_MS_CLIENT_ID: ${{ secrets.MS_CLIENT_ID }}
