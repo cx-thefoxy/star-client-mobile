@@ -40,15 +40,20 @@ export function joystickKeys(dx: number, dy: number, radius: number): { W: boole
 }
 
 /** Types one character: key press (for shortcuts) followed by the char event Minecraft's text fields read. */
-const SHIFTED: Record<string, [number, boolean]> = { "/": [47, false], ".": [46, false], ",": [44, false], "-": [45, false], "_": [45, true], ":": [59, true], " ": [32, false] };
+// Characters that are not letters or digits: [GLFW key, needs Shift] on a US keyboard layout.
+const SHIFTED: Record<string, [number, boolean]> = {
+  " ": [32, false], "'": [39, false], ",": [44, false], "-": [45, false], ".": [46, false], "/": [47, false], ";": [59, false], "=": [61, false],
+  "[": [91, false], "\\": [92, false], "]": [93, false], "`": [96, false],
+  "!": [49, true], "@": [50, true], "#": [51, true], "$": [52, true], "%": [53, true], "^": [54, true], "&": [55, true], "*": [56, true], "(": [57, true], ")": [48, true],
+  "_": [45, true], "+": [61, true], ":": [59, true], "\"": [39, true], "<": [44, true], ">": [46, true], "?": [47, true], "{": [91, true], "}": [93, true], "|": [92, true], "~": [96, true],
+};
 export function typeChar(ch: string, shift: boolean) {
-  const up = /[A-Z]/.test(ch) || shift;
-  const lower = ch.toLowerCase();
-  const code = GLFW[ch.toUpperCase()] ?? SHIFTED[ch]?.[0];
-  const needShift = up && /[a-zA-Z]/.test(ch) ? true : SHIFTED[ch]?.[1] ?? false;
+  const isLetter = /[a-zA-Z]/.test(ch);
+  const code = isLetter || /[0-9]/.test(ch) ? GLFW[ch.toUpperCase()] : SHIFTED[ch]?.[0];
+  const needShift = isLetter ? /[A-Z]/.test(ch) || shift : SHIFTED[ch]?.[1] ?? false;
   if (needShift) gameInput({ t: "key", key: 340, down: true });
   if (code !== undefined) gameInput({ t: "key", key: code, down: true });
-  gameInput({ t: "char", ch: (needShift && /[a-z]/.test(lower) ? ch.toUpperCase() : ch).charCodeAt(0) });
+  gameInput({ t: "char", ch: (isLetter && shift ? ch.toUpperCase() : ch).charCodeAt(0) });
   if (code !== undefined) gameInput({ t: "key", key: code, down: false });
   if (needShift) gameInput({ t: "key", key: 340, down: false });
 }
