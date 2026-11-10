@@ -20,6 +20,8 @@ import { describeError } from "./i18n/errors";
 import { api, onLaunchState, onGameExit } from "./services/tauri";
 
 type PageComponent = () => ReactElement;
+/** Game and editor use exactly the same box: the whole screen minus the notch / system bars (body padding would push a h-screen box off-screen). */
+const FULL: CSSProperties = { boxSizing: "border-box", paddingTop: "env(safe-area-inset-top)", paddingRight: "env(safe-area-inset-right)", paddingBottom: "env(safe-area-inset-bottom)", paddingLeft: "env(safe-area-inset-left)" };
 
 const PAGES: Record<Exclude<Page, "settings" | "editor" | "game">, PageComponent> = {
   home: Home,
@@ -108,8 +110,8 @@ function AppContent() {
     return () => { subs.forEach((p) => p.then((u) => u()).catch(() => {})); };
   }, []);
 
-  if (page === "game") return <div className="h-screen w-screen"><Game /></div>;
-  if (page === "editor") return <div className="relative h-screen w-screen"><Editor /></div>;
+  if (page === "game") return <div className="fixed inset-0" style={FULL}><Game /></div>;
+  if (page === "editor") return <div className="fixed inset-0" style={FULL}><Editor /></div>;
   const contentPage = page === "settings" ? "home" : page;
   const Page = PAGES[contentPage];
   return (

@@ -20,9 +20,13 @@ export const glfwKey = (k: string): number | undefined => GLFW[k];
 export const lastKey = { k: "", t: 0 };
 
 /** Press/release a widget key in the game. Unknown or UI-only keys are ignored. */
+const held = new Set<string>();
+/** Releases every widget key/button that is still held (screen changed, finger lost, app in background...). Prevents stuck Attack/keys. */
+export function releaseAllHeld() { for (const k of [...held]) sendWidgetKey(k, false); }
+
 export function sendWidgetKey(k: string, down: boolean) {
   if (UI_ONLY.has(k)) return;
-  if (down) { lastKey.k = k; lastKey.t = Date.now(); }
+  if (down) { lastKey.k = k; lastKey.t = Date.now(); held.add(k); } else held.delete(k);
   if (k in MOUSE) { gameInput({ t: "mouse", button: MOUSE[k], down }); return; }
   if (k === "ScrollUp" || k === "ScrollDown") { if (down) gameInput({ t: "scroll", dy: k === "ScrollUp" ? 1 : -1 }); return; }
   const c = GLFW[k];

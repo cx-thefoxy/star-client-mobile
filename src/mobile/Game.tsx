@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Pause, Play, Pencil, LogOut } from "lucide-react";
 import ControlsCanvas, { gamePx } from "./ControlsCanvas";
 import NativeKeyboard, { toggleKeyboard } from "./NativeKeyboard";
-import { lastKey } from "./keys";
+import { lastKey, releaseAllHeld } from "./keys";
 import { useControls } from "./controls";
 import { gameInput, gameSurface, stopGame } from "./native";
 import { onGameExit, onGameLog } from "../services/tauri";
@@ -39,6 +39,14 @@ export default function Game() {
   }, []);
 
   // Which screen is open decides which buttons show: cursor released after E = inventory, after Esc = pause, anything else = menu.
+  // Nothing may stay pressed when the screen changes (game <-> menu), the app goes to the background or this page closes.
+  useEffect(() => { releaseAllHeld(); }, [grab]);
+  useEffect(() => {
+    const off = () => releaseAllHeld();
+    window.addEventListener("blur", off); document.addEventListener("visibilitychange", off);
+    return () => { off(); window.removeEventListener("blur", off); document.removeEventListener("visibilitychange", off); };
+  }, []);
+
   useEffect(() => {
     if (grab) { setCtx("game"); return; }
     // Guess from the control that was tapped just before the cursor was released (the chip below corrects a wrong guess).

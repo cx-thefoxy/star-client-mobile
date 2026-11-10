@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { sendWidgetKey, joystickKeys } from "./keys";
 import { useControls, ctxOf, type Ctx, type Widget } from "./controls";
 
@@ -49,6 +49,18 @@ function Item({ w, edit, snap, onKb }: { w: Widget; edit: boolean; snap: boolean
   const [down, setDown] = useState(false);
   const [knob, setKnob] = useState({ x: 0, y: 0 });
   const held = useRef({ W: false, A: false, S: false, D: false });
+  const pressedKey = useRef<{ key: string; at: number } | null>(null); // a non-toggle key this widget currently holds down
+  const releaseKey = () => {
+    const p = pressedKey.current; if (!p) return;
+    pressedKey.current = null;
+    const wait = Math.max(0, 70 - (Date.now() - p.at)); // the game needs the key down for a few frames or a fast tap is lost
+    if (wait) window.setTimeout(() => sendWidgetKey(p.key, false), wait); else sendWidgetKey(p.key, false);
+  };
+  // If this widget disappears while pressed (screen changed), release what it holds
+  useEffect(() => () => {
+    if (pressedKey.current) { sendWidgetKey(pressedKey.current.key, false); pressedKey.current = null; }
+    (Object.keys(held.current) as (keyof typeof held.current)[]).forEach((k) => { if (held.current[k]) { held.current[k] = false; sendWidgetKey(k, false); } });
+  }, []);
   const setMove = (dx: number, dy: number, rad: number) => {
     const n = joystickKeys(dx, dy, rad);
     (Object.keys(n) as (keyof typeof n)[]).forEach((k) => { if (n[k] !== held.current[k]) { held.current[k] = n[k]; sendWidgetKey(k, n[k]); } });
@@ -70,6 +82,7 @@ function Item({ w, edit, snap, onKb }: { w: Widget; edit: boolean; snap: boolean
     if (edit) { pick(w.id); if (hb) return; start.current = { px: e.clientX, py: e.clientY, x: w.x, y: w.y }; return; }
     if (hb) { const i = slotAt(e); setSlot(i); sendWidgetKey(String(i + 1), true); sendWidgetKey(String(i + 1), false); return; } // tap or drag on the hotbar picks the slot
     press(w.key);
+    if (!w.toggle) { releaseKey(); pressedKey.current = { key: w.key, at: Date.now() }; } // (a stuck earlier press is released first)
     sendWidgetKey(w.key, w.toggle ? !down : true);
     setDown(w.toggle ? !down : true);
   };
@@ -88,7 +101,7 @@ function Item({ w, edit, snap, onKb }: { w: Widget; edit: boolean; snap: boolean
       setMove(dx, dy, m);
     }
   };
-  const onUp = () => { start.current = null; if (!edit && w.key === "KEYBOARD") onKb(); /* on release: Android only opens the keyboard from a finished tap */ if (!edit) { if (!w.toggle) { setDown(false); sendWidgetKey(w.key, false); } setKnob({ x: 0, y: 0 }); setMove(0, 0, 1); } };
+  const onUp = () => { start.current = null; if (!edit && w.key === "KEYBOARD") onKb(); /* on release: Android only opens the keyboard from a finished tap */ if (!edit) { if (!w.toggle) { setDown(false); releaseKey(); } setKnob({ x: 0, y: 0 }); setMove(0, 0, 1); } };
 
   const hDown = (e: React.PointerEvent) => { e.stopPropagation(); e.currentTarget.setPointerCapture(e.pointerId); size.current = { px: e.clientX, py: e.clientY, w: w.w, h: w.h }; };
   const hMove = (e: React.PointerEvent) => {
@@ -99,7 +112,7 @@ function Item({ w, edit, snap, onKb }: { w: Widget; edit: boolean; snap: boolean
 
   return (
     <div
-      ref={box} className="ctl pointer-events-auto absolute" onPointerDown={onDown} onPointerMove={onMove} onPointerUp={onUp} onPointerCancel={onUp}
+      ref={box} className="ctl pointer-events-auto absolute" onPointerDown={onDown} onPointerMove={onMove} onPointerUp={onUp} onPointerCancel={onUp} onLostPointerCapture={onUp}
       style={{ left: hb ? `calc(50% - ${bw0 / 2}px)` : `min(${w.x}%, calc(100% - ${bw0}px))`, top: hb ? `calc(100% - ${bh0}px)` : `min(${w.y}%, calc(100% - ${bh0}px))`, width: bw0, height: bh0, opacity: edit ? Math.max(w.opacity, 0.6) : w.opacity, zIndex: w.kind === "touchpad" ? 1 : 2 }}
     >
       <Face w={hb ? { ...w, w: bw0, h: bh0 } : w} down={down} knob={knob} slot={slot} />
