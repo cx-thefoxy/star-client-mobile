@@ -1,6 +1,6 @@
 // Run after `npx tauri android init`: copies the small Java/Kotlin layer, Pojav libraries and the bundled JREs into the
 // generated Android project and patches manifest + gradle. Safe to run repeatedly.
-import { existsSync, readFileSync, writeFileSync, cpSync, mkdirSync, rmSync } from "node:fs";
+import { existsSync, readFileSync, writeFileSync, cpSync, mkdirSync, rmSync, readdirSync } from "node:fs";
 import path from "node:path";
 
 const A = "src-tauri/gen/android/app";
@@ -35,6 +35,28 @@ if (existsSync(pro)) { const cur = readFileSync(pro, "utf8"); if (!cur.includes(
 
 // 3. Launcher icons
 cpSync("native-android/res", `${MAIN}/res`, { recursive: true });
+
+// 3b. Android shows its own start-up screen (system theme colour + app icon) before the page loads. Give it the app's background colour and no icon,
+// so the Star splash follows without a differently coloured screen in between (the same colour is also what shows behind the game while it starts).
+for (const dir of ["values", "values-night"]) {
+  const d = `${MAIN}/res/${dir}`;
+  if (!existsSync(d)) continue;
+  for (const f of readdirSync(d).filter((n) => n.endsWith(".xml"))) {
+    const tf = path.join(d, f);
+    let t = readFileSync(tf, "utf8");
+    // Any app theme (Theme.MaterialComponents..., Theme.Material3..., Theme.AppCompat...): Material3 is what gives the purple-tinted dark start-up screen (#141218)
+    if (!/<style\s+name="[^"]*"\s+parent="Theme\./.test(t) || t.includes("star_bg")) continue;
+    for (const n of ["android:windowBackground", "android:colorBackground", "android:windowSplashScreenBackground", "android:windowSplashScreenAnimatedIcon", "android:windowSplashScreenIconBackgroundColor"])
+      t = t.replace(new RegExp(`\\s*<item\\s+name="${n}">[^<]*</item>`, "g"), "");
+    t = t.replace(/(<style\s+name="[^"]*"\s+parent="Theme\.[^"]*"\s*>)/g, `$1
+        <item name="android:windowBackground">@color/star_bg</item>
+        <item name="android:colorBackground">@color/star_bg</item>
+        <item name="android:windowSplashScreenBackground">@color/star_bg</item>
+        <item name="android:windowSplashScreenAnimatedIcon">@drawable/star_splash_icon</item>
+        <item name="android:windowSplashScreenIconBackgroundColor">@color/star_bg</item>`);
+    writeFileSync(tf, t);
+  }
+}
 
 // 4. Manifest: landscape, no cloud backup of tokens, extract native libs (the JVM dlopens them by path), the ":jvm" game service
 const mf = `${MAIN}/AndroidManifest.xml`;
