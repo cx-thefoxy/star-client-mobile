@@ -160,15 +160,18 @@ public class StarGameService extends Service {
         a.add("-Dos.name=Linux");
         a.add("-Dorg.lwjgl.vulkan.libname=libvulkan.so");
         a.add("-Dlog4j2.formatMsgNoLookups=true");
+        boolean cpDone = false;
         if (extra != null) {
           for (int i = 0; i < extra.length; i++) {
             String e = extra[i];
             // The Star Client mark instead of the Mojang logo: the classpath points at a patched copy of the client jar.
-            if (("-cp".equals(e) || "-classpath".equals(e)) && i + 1 < extra.length) { a.add(e); a.add(StarSplash.patchClasspath(extra[++i], log)); }
-            else if (e.startsWith("-Djava.class.path=")) a.add("-Djava.class.path=" + StarSplash.patchClasspath(e.substring("-Djava.class.path=".length()), log));
+            String fj = StarSplash.focusJar(gameDir), fp = fj == null ? "" : fj + java.io.File.pathSeparator;
+            if (("-cp".equals(e) || "-classpath".equals(e)) && i + 1 < extra.length) { a.add(e); a.add(fp + StarSplash.patchClasspath(extra[++i], log)); cpDone = fj != null; }
+            else if (e.startsWith("-Djava.class.path=")) { a.add("-Djava.class.path=" + fp + StarSplash.patchClasspath(e.substring("-Djava.class.path=".length()), log)); cpDone = fj != null; }
             else a.add(e);
           }
         }
+        if (cpDone) a.add("-Djava.system.class.loader=StarFocus");
         code = StarJvm.run(jre, StarJvm.fix(a.toArray(new String[0])), log);
       } catch (Throwable t) { note(log, "[star] " + t); }
       note(log, "\n[exit " + code + "]");

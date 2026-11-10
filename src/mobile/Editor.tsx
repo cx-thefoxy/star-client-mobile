@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { ArrowLeft, Copy, Grid3x3, Plus, RotateCcw, Trash2, X, Zap, Check } from "lucide-react";
-import { useControls, PRESETS, PACKS, CTXS, ctxOf, type Kind, type Widget } from "./controls";
+import { useControls, PRESETS, PACKS, type Kind, type Widget } from "./controls";
 import { useApp } from "../store/app";
 import ControlsCanvas, { Face, radiusOf } from "./ControlsCanvas";
 
@@ -10,8 +10,6 @@ const TINTS = [undefined, "#ffffff", "#ef4444", "#22c55e", "#3b82f6", "#eab308"]
 const KINDS: { id: Kind; label: string; w: number; h: number; name: string; key: string; radius: number }[] = [
   { id: "button", label: "Button", w: 52, h: 52, name: "Button", key: "Space", radius: 50 },
   { id: "joystick", label: "Joystick", w: 120, h: 120, name: "Move", key: "WASD", radius: 50 },
-  { id: "touchpad", label: "Look area", w: 260, h: 200, name: "Look", key: "Mouse", radius: 12 },
-  { id: "hotbar", label: "Hotbar", w: 360, h: 40, name: "Hotbar", key: "1-9", radius: 12 },
 ];
 const inp = "h-8 w-full rounded-lg bg-control px-2 text-xs text-ink outline-none focus:ring-1 focus:ring-accent";
 const chip = (on: boolean) => `rounded-md px-1.5 py-1 text-[10px] ${on ? "bg-accent text-accent-ink" : "bg-control"}`;
@@ -91,32 +89,29 @@ function AddDialog({ onClose }: { onClose: () => void }) {
 }
 
 export default function Editor({ openAdd = false, openCustom = false }: { openAdd?: boolean; openCustom?: boolean }) {
-  const { profiles, active, editing, pick, addWidget, addPack, duplicateWidget, patchWidget, removeWidget, resetProfile, editCtx, setEditCtx } = useControls();
+  const { profiles, active, editing, pick, addWidget, addPack, duplicateWidget, patchWidget, removeWidget, resetProfile } = useControls();
   const setPage = useApp((s) => s.setPage);
   const [quick, setQuick] = useState(openAdd);
   const [custom, setCustom] = useState(openCustom);
   const [snap, setSnap] = useState(false);
   const [added, setAdded] = useState<Record<string, number>>({});
   const p = profiles.find((x) => x.id === active)!;
-  const w = p.widgets.find((x) => x.id === editing && ctxOf(x) === editCtx);
+  const w = p.widgets.find((x) => x.id === editing);
   const btn = "flex h-8 items-center gap-1.5 rounded-lg bg-black/60 px-3 text-xs font-medium backdrop-blur hover:bg-black/80";
   const bump = (k: string) => setAdded((o) => ({ ...o, [k]: (o[k] ?? 0) + 1 }));
 
   return (
     <div className="relative h-full w-full overflow-hidden bg-bg">
       <div className="absolute inset-0 bg-black/60" />
-      <ControlsCanvas edit onKb={() => {}} snap={snap} ctx={editCtx} />
+      <ControlsCanvas edit onKb={() => {}} snap={snap} />
       <div className="absolute inset-x-0 top-0 z-30 flex items-center gap-2 p-2">
         <button className={btn} onClick={() => setPage("controls")}><ArrowLeft size={14} />Back</button>
-        <div className={`${btn} pointer-events-none max-w-[110px] truncate`}>{p.name}</div>
-        <div className="flex gap-1 rounded-xl bg-black/60 p-1 backdrop-blur">
-          {CTXS.map((c) => <button key={c.id} onClick={() => { setEditCtx(c.id); setQuick(false); }} className={`h-6 rounded-lg px-2 text-[11px] font-medium ${editCtx === c.id ? "bg-accent text-accent-ink" : "text-white/80"}`}>{c.label}</button>)}
-        </div>
+        <div className={`${btn} pointer-events-none`}>Editing: {p.name}</div>
         <div className="flex-1" />
-        <button className={btn} onClick={() => { setQuick((v) => !v); pick(null); }} aria-label="Quick add"><Zap size={14} /></button>
-        <button className={btn} onClick={() => { setCustom(true); setQuick(false); pick(null); }} aria-label="Add"><Plus size={14} /></button>
-        <button className={`${btn} ${snap ? "!bg-white !text-black" : ""}`} onClick={() => setSnap((v) => !v)} aria-label="Snap to grid"><Grid3x3 size={14} /></button>
-        <button className={btn} onClick={resetProfile} aria-label={`Reset ${editCtx} layout`}><RotateCcw size={14} /></button>
+        <button className={btn} onClick={() => { setQuick((v) => !v); pick(null); }}><Zap size={14} />Quick add</button>
+        <button className={btn} onClick={() => { setCustom(true); setQuick(false); pick(null); }}><Plus size={14} />Add</button>
+        <button className={`${btn} ${snap ? "!bg-white !text-black" : ""}`} onClick={() => setSnap((v) => !v)} aria-label="Snap to grid"><Grid3x3 size={14} />Snap</button>
+        <button className={btn} onClick={resetProfile}><RotateCcw size={14} />Reset</button>
         
       </div>
 
@@ -170,7 +165,7 @@ export default function Editor({ openAdd = false, openCustom = false }: { openAd
           </div>
         </div>
       )}
-      {!w && !quick && !custom && <div className="pointer-events-none absolute bottom-[58px] left-1/2 z-30 -translate-x-1/2 rounded-full bg-black/60 px-3 py-1 text-[11px] text-white/80">{editCtx === "game" ? "In game" : editCtx === "inventory" ? "Inventory" : editCtx === "pause" ? "Pause menu" : "Menus, chat, death screen"} · drag to move · tap to edit · drag the dot to resize</div>}
+      {!w && !quick && !custom && <div className="pointer-events-none absolute bottom-[58px] left-1/2 z-30 -translate-x-1/2 rounded-full bg-black/60 px-3 py-1 text-[11px] text-white/80">Drag to move · tap to edit · drag the dot to resize</div>}
     </div>
   );
 }
