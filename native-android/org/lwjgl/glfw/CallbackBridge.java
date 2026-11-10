@@ -160,14 +160,14 @@ public class CallbackBridge {
   public static void addGrabListener(GrabListener l) { synchronized (grabListeners) { l.onGrabState(isGrabbing); grabListeners.add(l); } }
   public static void removeGrabListener(GrabListener l) { synchronized (grabListeners) { grabListeners.remove(l); } }
 
-  @Keep @CriticalNative public static native void nativeSetUseInputStackQueue(boolean useInputStackQueue);
-  @Keep @CriticalNative private static native boolean nativeSendChar(char codepoint);
-  @Keep @CriticalNative private static native boolean nativeSendCharMods(char codepoint, int mods);
-  @Keep @CriticalNative private static native void nativeSendKey(int key, int scancode, int action, int mods);
-  @Keep @CriticalNative private static native void nativeSendCursorPos(float x, float y);
-  @Keep @CriticalNative private static native void nativeSendMouseButton(int button, int action, int mods);
-  @Keep @CriticalNative private static native void nativeSendScroll(double xoffset, double yoffset);
-  @Keep @CriticalNative private static native void nativeSendScreenSize(int width, int height);
+  @Keep public static native void nativeSetUseInputStackQueue(boolean useInputStackQueue);
+  @Keep private static native boolean nativeSendChar(char codepoint);
+  @Keep private static native boolean nativeSendCharMods(char codepoint, int mods);
+  @Keep private static native void nativeSendKey(int key, int scancode, int action, int mods);
+  @Keep private static native void nativeSendCursorPos(float x, float y);
+  @Keep private static native void nativeSendMouseButton(int button, int action, int mods);
+  @Keep private static native void nativeSendScroll(double xoffset, double yoffset);
+  @Keep private static native void nativeSendScreenSize(int width, int height);
   public static native void nativeSetWindowAttrib(int attrib, int value);
 
   static {

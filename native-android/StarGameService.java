@@ -171,7 +171,6 @@ public class StarGameService extends Service {
             else a.add(e);
           }
         }
-        if (cpDone) a.add("-Djava.system.class.loader=StarFocus");
         code = StarJvm.run(jre, StarJvm.fix(a.toArray(new String[0])), log);
       } catch (Throwable t) { note(log, "[star] " + t); }
       note(log, "\n[exit " + code + "]");
