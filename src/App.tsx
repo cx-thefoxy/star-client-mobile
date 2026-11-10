@@ -1,4 +1,4 @@
-import { Component, useEffect, useMemo, type CSSProperties, type ErrorInfo, type ReactElement, type ReactNode } from "react";
+import { Component, useEffect, useMemo, useState, type CSSProperties, type ErrorInfo, type ReactElement, type ReactNode } from "react";
 import { X, RotateCw } from "./components/icons";
 import { useApp, resolveToast, type Page } from "./store/app";
 import { Sidebar } from "./components/Sidebar";
@@ -8,6 +8,7 @@ import { Mods } from "./pages/Mods";
 import { Settings } from "./pages/Settings";
 import { AccountsLayer } from "./components/AccountsLayer";
 import { Help } from "./pages/Help";
+import Splash from "./components/Splash";
 import { ControlsPage } from "./mobile/ControlsPage";
 import Game from "./mobile/Game";
 import Editor from "./mobile/Editor";
@@ -65,6 +66,7 @@ function AppContent() {
   const dismissToast = useApp((s) => s.dismissToast);
   const bootError = useApp((s) => s.error);
   const bootstrap = useApp((s) => s.bootstrap);
+  const [splash, setSplash] = useState(true);
   const reduced = settings?.appearance.reducedMotion ?? false;
   const savedAccent = settings?.appearance.accent ?? "white";
   const dynamicAccent = settings?.appearance.dynamicAccent ?? false;
@@ -111,6 +113,8 @@ function AppContent() {
   const contentPage = page === "settings" ? "home" : page;
   const Page = PAGES[contentPage];
   return (
+    <>
+    {splash && <Splash ready={!!settings || !!bootError} reduced={reduced} onDone={() => setSplash(false)} />}
     <div className={`app-shell flex h-screen flex-col text-ink ${reduced ? "reduced-motion" : ""}`} data-accent={accent} style={{ "--r-scale": radius / 12, ...(opacity < 100 ? { opacity: opacity / 100 } : {}) } as CSSProperties}>
       <div className="flex min-h-0 flex-1">
         <Sidebar />
@@ -144,6 +148,7 @@ function AppContent() {
         ))}
       </div>
     </div>
+    </>
   );
 }
 

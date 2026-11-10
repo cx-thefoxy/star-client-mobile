@@ -67,4 +67,14 @@ if (!g.includes("bytedance:bytehook")) {
 }
 writeFileSync(gf, g);
 
+// The start-up screen asks GitHub for the newest release: allow that one host in the webview's CSP.
+{
+  const cf = "src-tauri/tauri.conf.json";
+  let c = readFileSync(cf, "utf8");
+  if (c.includes("connect-src") && !c.includes("https://api.github.com")) {
+    c = c.replace("connect-src ipc: http://ipc.localhost", "connect-src ipc: http://ipc.localhost https://api.github.com");
+    writeFileSync(cf, c);
+  }
+}
+
 console.log(`Android project ready (versionName ${pkg.version}, versionCode ${code}).`);

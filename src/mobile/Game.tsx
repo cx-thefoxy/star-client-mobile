@@ -77,12 +77,14 @@ export default function Game() {
     window.setTimeout(() => { sendPos(); gameInput({ t: "mouse", button: 0, down: true }); }, 70);
     window.setTimeout(() => gameInput({ t: "mouse", button: 0, down: false }), 190);
   };
+  // Turning the mouse ON always puts the cursor in the middle of the screen.
   useEffect(() => {
     if (!touchpad) return;
-    if (cur.current.x === 0 && cur.current.y === 0) cur.current = { x: (window.innerWidth / 2) * k, y: (window.innerHeight / 2) * k };
+    cur.current = { x: (window.innerWidth / 2) * k, y: (window.innerHeight / 2) * k };
     setCurCss({ x: cur.current.x / k, y: cur.current.y / k });
     sendPos();
-  }, [touchpad, k]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [touchpad]);
 
   const down = (e: React.PointerEvent) => {
     if (paused) return;
@@ -90,7 +92,6 @@ export default function Game() {
     if (holding.current) { holding.current = false; gameInput({ t: "mouse", button: 0, down: false }); }
     if (pressed.current) { pressed.current = false; gameInput({ t: "mouse", button: 0, down: false }); }
     look.current = { id: e.pointerId, x: e.clientX, y: e.clientY, moved: 0 };
-    try { (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId); } catch { /* not capturable */ }
     t0.current = Date.now(); holding.current = false; pressed.current = false;
     if (touchpad) {
       holdT.current = window.setTimeout(() => {
@@ -125,7 +126,7 @@ export default function Game() {
   };
 
   return (
-    <div className="relative h-full w-full overflow-hidden" style={{ touchAction: "none" }} onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerCancel={up}>
+    <div className="relative h-full w-full overflow-hidden" style={{ touchAction: "none" }} onMouseDown={(e) => { if (document.activeElement instanceof HTMLInputElement) e.preventDefault(); }} onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerCancel={up}>
       {!hideOnScreenUI && <ControlsCanvas edit={false} onKb={toggleKeyboard} ctx={ctx} />}
       <NativeKeyboard onOpen={() => setKb(true)} onClose={() => setKb(false)} />
       {touchpad && !paused && curCss && (
