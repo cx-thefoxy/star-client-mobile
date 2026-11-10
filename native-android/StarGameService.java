@@ -95,7 +95,7 @@ public class StarGameService extends Service {
     if (surface != null) { surface.release(); surface = null; }
   }
 
-  private static void note(String log, String msg) {
+  static void note(String log, String msg) {
     Log.e(TAG, msg);
     try (java.io.FileOutputStream o = new java.io.FileOutputStream(log, true)) { o.write((msg + "\n").getBytes()); } catch (Exception ignored) { }
   }
@@ -136,6 +136,7 @@ public class StarGameService extends Service {
           if (f.exists() && !JREUtils.dlopen(f.getAbsolutePath())) note(log, "[star] dlopen failed: " + lib);
         }
         new java.io.File(gameDir).mkdirs();
+        StarSplash.blackBackground(gameDir);
         JREUtils.chdir(gameDir);
         note(log, "[star] step 4: setupExitMethod");
         JREUtils.setupExitMethod(getApplication());
@@ -159,7 +160,15 @@ public class StarGameService extends Service {
         a.add("-Dos.name=Linux");
         a.add("-Dorg.lwjgl.vulkan.libname=libvulkan.so");
         a.add("-Dlog4j2.formatMsgNoLookups=true");
-        if (extra != null) java.util.Collections.addAll(a, extra);
+        if (extra != null) {
+          for (int i = 0; i < extra.length; i++) {
+            String e = extra[i];
+            // The Star Client mark instead of the Mojang logo: the classpath points at a patched copy of the client jar.
+            if (("-cp".equals(e) || "-classpath".equals(e)) && i + 1 < extra.length) { a.add(e); a.add(StarSplash.patchClasspath(extra[++i], log)); }
+            else if (e.startsWith("-Djava.class.path=")) a.add("-Djava.class.path=" + StarSplash.patchClasspath(e.substring("-Djava.class.path=".length()), log));
+            else a.add(e);
+          }
+        }
         code = StarJvm.run(jre, StarJvm.fix(a.toArray(new String[0])), log);
       } catch (Throwable t) { note(log, "[star] " + t); }
       note(log, "\n[exit " + code + "]");

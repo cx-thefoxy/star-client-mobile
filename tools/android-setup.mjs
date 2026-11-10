@@ -11,7 +11,7 @@ const PKG_DIR = `${MAIN}/java/app/starclient/mobile`;
 mkdirSync(PKG_DIR, { recursive: true });
 
 // 1. Java / Kotlin layer (packages are fixed: libpojavexec.so registers natives under these exact class names)
-for (const f of ["StarBridge.java", "StarJvm.java", "StarInput.java", "StarGameSurface.java", "StarGameService.java", "StarGameClient.java"])
+for (const f of ["StarBridge.java", "StarJvm.java", "StarInput.java", "StarGameSurface.java", "StarGameService.java", "StarGameClient.java", "StarSplash.java"])
   cpSync(path.join("native-android", f), path.join(PKG_DIR, f));
 cpSync("native-android/MainActivity.kt", path.join(PKG_DIR, "MainActivity.kt"));
 for (const d of ["org", "net"]) cpSync(path.join("native-android", d), path.join(`${MAIN}/java`, d), { recursive: true });
@@ -43,9 +43,6 @@ m = m.replace(/android:allowBackup="[^"]*"/, 'android:allowBackup="false"');
 // OpenJDK strips pointer tag bits before free(): with Android's heap pointer tagging (targetSdk 30+) that aborts ("Pointer tag ... was truncated"). Same fix as PojavLauncher.
 if (!m.includes("allowNativeHeapPointerTagging")) m = m.replace("<application", '<application\n        android:allowNativeHeapPointerTagging="false"');
 if (!m.includes("extractNativeLibs")) m = m.replace("<application", '<application\n        android:extractNativeLibs="true"\n        android:largeHeap="true"');
-// Phone keyboard over the game must not resize the window/SurfaceView
-if (m.includes("windowSoftInputMode")) m = m.replace(/android:windowSoftInputMode="[^"]*"/, 'android:windowSoftInputMode="adjustNothing"');
-else m = m.replace("<activity", '<activity\n            android:windowSoftInputMode="adjustNothing"');
 if (!m.includes("screenOrientation")) m = m.replace("<activity", '<activity\n            android:screenOrientation="sensorLandscape"');
 if (!m.includes("StarGameService")) m = m.replace("</application>", '    <service android:name=".StarGameService" android:process=":jvm" android:exported="false" />\n    </application>');
 writeFileSync(mf, m);
