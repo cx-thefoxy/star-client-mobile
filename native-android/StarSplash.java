@@ -249,18 +249,6 @@ final class StarSplash {
 
   /** The classpath with the vanilla client jar swapped for the patched copy (unchanged when anything goes wrong). */
 
-  private static final String FOCUS_JAR = "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";
-
-  /** Writes the tiny focus-fix jar (a system class loader hook) and returns its path. */
-  static String focusJar(String gameDir) {
-    try {
-      File f = new File(gameDir, "star-focus.jar");
-      byte[] b = android.util.Base64.decode(FOCUS_JAR, android.util.Base64.DEFAULT);
-      if (!f.isFile() || f.length() != b.length) try (FileOutputStream o = new FileOutputStream(f)) { o.write(b); }
-      return f.getAbsolutePath();
-    } catch (Throwable t) { return null; }
-  }
-
   static String patchClasspath(String cp, String log) {
     if (cp == null) return null;
     String sep = File.pathSeparator;

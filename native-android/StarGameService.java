@@ -173,14 +173,12 @@ public class StarGameService extends Service {
         a.add("-Dos.name=Linux");
         a.add("-Dorg.lwjgl.vulkan.libname=libvulkan.so");
         a.add("-Dlog4j2.formatMsgNoLookups=true");
-        boolean cpDone = false;
         if (extra != null) {
           for (int i = 0; i < extra.length; i++) {
             String e = extra[i];
             // The Star Client mark instead of the Mojang logo: the classpath points at a patched copy of the client jar.
-            String fj = StarSplash.focusJar(gameDir), fp = fj == null ? "" : fj + java.io.File.pathSeparator;
-            if (("-cp".equals(e) || "-classpath".equals(e)) && i + 1 < extra.length) { a.add(e); a.add(fp + StarSplash.patchClasspath(extra[++i], log)); cpDone = fj != null; }
-            else if (e.startsWith("-Djava.class.path=")) { a.add("-Djava.class.path=" + fp + StarSplash.patchClasspath(e.substring("-Djava.class.path=".length()), log)); cpDone = fj != null; }
+            if (("-cp".equals(e) || "-classpath".equals(e)) && i + 1 < extra.length) { a.add(e); a.add(StarSplash.patchClasspath(extra[++i], log)); }
+            else if (e.startsWith("-Djava.class.path=")) { a.add("-Djava.class.path=" + StarSplash.patchClasspath(e.substring("-Djava.class.path=".length()), log)); }
             else if (("--width".equals(e) || "--height".equals(e)) && i + 1 < extra.length) { a.add(e); i++; a.add(String.valueOf("--width".equals(e) ? CallbackBridge.windowWidth : CallbackBridge.windowHeight)); } // the game window is the whole screen, not 854x480
             else a.add(e);
           }
