@@ -90,6 +90,19 @@ function AppContent() {
   // The game opens full screen when it starts and the launcher comes back when it ends.
   const renderer = useControls((c) => c.renderer);
   useEffect(() => { void setMobileOpts(renderer); }, [renderer]);
+  // Coming back to the app while a game is still running: show the game again (the launcher page must not cover it).
+  useEffect(() => {
+    const back = () => {
+      if (document.visibilityState !== "visible") return;
+      api.runningGames().then((r) => {
+        const st = useApp.getState();
+        if (r.length > 0 && st.page !== "game" && st.page !== "editor") { useApp.setState({ running: r }); st.setPage("game"); }
+      }).catch(() => {});
+    };
+    document.addEventListener("visibilitychange", back);
+    window.addEventListener("focus", back);
+    return () => { document.removeEventListener("visibilitychange", back); window.removeEventListener("focus", back); };
+  }, []);
   // Launch progress and game exit are handled here (not in Home) so they still work while the game screen is open.
   useEffect(() => {
     const subs = [

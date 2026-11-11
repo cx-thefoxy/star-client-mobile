@@ -106,6 +106,8 @@ export const useApp = create<AppState>((set, get) => ({
       await Promise.all([get().refreshVersions(), get().refreshInstances(), get().refreshAccounts()]);
       const running = await api.runningGames().catch(() => []);
       set({ running });
+      // The app was closed/reopened while the game kept running: go straight back into it.
+      if (running.length > 0) set({ page: "game" });
     } catch (e) {
       set({ error: e instanceof BackendError ? e : new BackendError("unknown", String(e)) });
     }

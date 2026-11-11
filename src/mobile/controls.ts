@@ -232,7 +232,7 @@ export const useControls = create<State>((set) => ({
   slot: 0, setSlot: (slot) => set({ slot }),
   ctx: "menu", setCtx: (ctx) => set({ ctx }), editCtx: "game", setEditCtx: (editCtx) => set({ editCtx, editing: null }),
   renderer: saved.renderer === "LTW" ? "LTW" : "Holy GL4ES", setRenderer: (renderer) => set({ renderer }),
-  resScale: saved.resScale ?? 100, setResScale: (resScale) => set({ resScale }),
+  resScale: saved.resScale ?? 60, setResScale: (resScale) => set({ resScale }),
   guiScale: saved.guiScale ?? 0, setGuiScale: (guiScale) => set({ guiScale }),
   menuMode: !!saved.menuMode, setMenuMode: (menuMode) => set({ menuMode }),
   hideOnScreenUI: !!saved.hideOnScreenUI, setHide: (hideOnScreenUI) => set({ hideOnScreenUI }),

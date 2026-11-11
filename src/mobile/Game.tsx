@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Pause, Play, Pencil, LogOut } from "lucide-react";
-import ControlsCanvas, { gamePx } from "./ControlsCanvas";
+import ControlsCanvas, { gamePx, effectiveGuiScale } from "./ControlsCanvas";
 import NativeKeyboard, { toggleKeyboard } from "./NativeKeyboard";
 import { lastKey, releaseAllHeld } from "./keys";
 import { useControls } from "./controls";
@@ -13,7 +13,7 @@ import { useApp } from "../store/app";
  * drag = look (or move the cursor and click when "tap to click" is on), widgets = keys, joystick = WASD.
  */
 export default function Game() {
-  const { resScale, menuMode, setMenuMode, hideOnScreenUI, ctx, setCtx } = useControls();
+  const { resScale, guiScale, menuMode, setMenuMode, hideOnScreenUI, ctx, setCtx } = useControls();
   const setPage = useApp((s) => s.setPage);
   const look = useRef<{ id: number; x: number; y: number; moved: number } | null>(null);
   const cur = useRef({ x: 0, y: 0 });
@@ -94,8 +94,17 @@ export default function Game() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [touchpad]);
 
+  // The game's own hotbar (bottom centre, 182x22 GUI px) is touchable while playing: tap or slide over a slot to pick it.
+  const hotbar = useRef<{ id: number; slot: number } | null>(null);
+  const hotbarSlot = (x: number, y: number): number => {
+    const hs = effectiveGuiScale(guiScale, resScale) / k, w = 182 * hs, h = 22 * hs, left = (window.innerWidth - w) / 2;
+    if (y < window.innerHeight - h - 6 * hs || x < left || x > left + w) return -1;
+    return Math.min(8, Math.max(0, Math.floor(((x - left - 3 * hs) / (20 * hs)))));
+  };
+  const pickSlot = (i: number) => { if (hotbar.current) hotbar.current.slot = i; gameInput({ t: "key", key: 49 + i, down: true }); gameInput({ t: "key", key: 49 + i, down: false }); };
   const down = (e: React.PointerEvent) => {
     if (paused) return;
+    if (grab) { const i = hotbarSlot(e.clientX, e.clientY); if (i >= 0) { hotbar.current = { id: e.pointerId, slot: i }; pickSlot(i); return; } }
     window.clearTimeout(holdT.current); window.clearTimeout(pressT.current);
     if (holding.current) { holding.current = false; gameInput({ t: "mouse", button: 0, down: false }); }
     if (pressed.current) { pressed.current = false; gameInput({ t: "mouse", button: 0, down: false }); }
@@ -112,6 +121,8 @@ export default function Game() {
     }
   };
   const move = (e: React.PointerEvent) => {
+    const hb = hotbar.current;
+    if (hb && hb.id === e.pointerId) { const i = hotbarSlot(e.clientX, e.clientY); if (i >= 0 && i !== hb.slot) pickSlot(i); return; }
     const l = look.current; if (!l || l.id !== e.pointerId) return;
     const dx = e.clientX - l.x, dy = e.clientY - l.y; look.current = { ...l, x: e.clientX, y: e.clientY, moved: l.moved + Math.abs(dx) + Math.abs(dy) };
     if (touchpad) { const g = 1.6; cur.current = { x: cur.current.x + dx * k * g, y: cur.current.y + dy * k * g }; clampCur(); setCurCss({ x: cur.current.x / k, y: cur.current.y / k }); }
@@ -120,6 +131,7 @@ export default function Game() {
     sendPos();
   };
   const up = (e: React.PointerEvent) => {
+    if (hotbar.current && hotbar.current.id === e.pointerId) { hotbar.current = null; return; }
     const l = look.current;
     if (!l || l.id !== e.pointerId) return;
     look.current = null;

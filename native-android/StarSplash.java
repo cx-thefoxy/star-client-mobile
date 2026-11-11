@@ -319,10 +319,18 @@ final class StarSplash {
     try {
       File f = new File(gameDir, "options.txt");
       String txt = f.isFile() ? new String(java.nio.file.Files.readAllBytes(f.toPath())) : "";
-      if (txt.contains("darkMojangStudiosBackground:true")) return;
+      File tuned = new File(gameDir, ".star-tuned");
+      boolean first = !tuned.exists();
+      if (txt.contains("darkMojangStudiosBackground:true") && !first) return;
       StringBuilder sb = new StringBuilder();
-      for (String line : txt.split("\\n")) if (!line.startsWith("darkMojangStudiosBackground:") && !line.isEmpty()) sb.append(line).append('\n');
+      for (String line : txt.split("\\n")) if (!line.startsWith("darkMojangStudiosBackground:") && !line.isEmpty() && !(first && (line.startsWith("renderDistance:") || line.startsWith("maxFps:") || line.startsWith("enableVsync:") || line.startsWith("particles:")))) sb.append(line).append('\n');
       sb.append("darkMojangStudiosBackground:true\n");
+      if (first) {
+        // First launch of this game folder: phone-friendly defaults (short view distance, no vsync/fancy extras). The player can change them later.
+        String[][] d = { { "renderDistance", "6" }, { "maxFps", "60" }, { "enableVsync", "false" }, { "particles", "2" } };
+        for (String[] kv : d) if (!sb.toString().contains(kv[0] + ":")) sb.append(kv[0]).append(':').append(kv[1]).append('\n');
+        try { tuned.createNewFile(); } catch (Throwable ignored) { }
+      }
       try (FileOutputStream o = new FileOutputStream(f)) { o.write(sb.toString().getBytes()); }
     } catch (Throwable ignored) { }
   }
