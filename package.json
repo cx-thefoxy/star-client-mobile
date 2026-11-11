@@ -10,6 +10,8 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@fontsource/baloo-bhaijaan-2": "^5.0.0",
+    "@fontsource/vazirmatn": "^5.0.0",
     "@tauri-apps/api": "^2.0.0",
     "@tauri-apps/plugin-opener": "^2.0.0",
     "lucide-react": "^0.460.0",

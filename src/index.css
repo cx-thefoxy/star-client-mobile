@@ -74,6 +74,8 @@
 /* Translucent white/black overlays used by the shell are inverted so they stay visible. */
 [data-theme="light"] .bg-white\/5, [data-theme="light"] .hover\:bg-white\/5:hover,
 [data-theme="light"] .bg-white\/\[0\.05\], [data-theme="light"] .bg-white\/\[0\.06\] { background-color: rgb(0 0 0 / .05); }
+[data-theme="light"] .bg-white\/10, [data-theme="light"] .hover\:bg-white\/10:hover { background-color: rgb(0 0 0 / .08); }
+[data-theme="light"] .ring-white\/20 { --tw-ring-color: rgb(0 0 0 / .18); }
 [data-theme="light"] .border-white\/10 { border-color: rgb(0 0 0 / .10); }
 [data-theme="light"] .bg-black\/30 { background-color: rgb(255 255 255 / .78); }
 [data-theme="light"] .skeleton { background: linear-gradient(90deg, rgba(0,0,0,.04), rgba(0,0,0,.09), rgba(0,0,0,.04)); background-size: 220% 100%; }
@@ -82,7 +84,7 @@
 
 /* ---------------------------------------------------------------- Persian */
 /* Text direction is handled per string (bidi isolates); only typography changes here. */
-:lang(fa) { --font-ui: "Vazirmatn", "Noto Sans Arabic", "Segoe UI", Tahoma, system-ui, sans-serif; --leading-ui: 1.65; }
+:lang(fa) { --font-ui: "Inter", "Baloo Bhaijaan 2", "Vazirmatn", "Noto Sans Arabic", "Segoe UI", Tahoma, system-ui, sans-serif; --leading-ui: 1.6; }
 /* Letter-spacing breaks Arabic-script joining. */
 :lang(fa) * { letter-spacing: 0 !important; }
 

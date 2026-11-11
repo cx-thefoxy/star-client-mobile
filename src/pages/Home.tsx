@@ -9,7 +9,7 @@ import hero2 from "../assets/hero-2.jpg";
 const HEROES = [hero1, hero2];
 
 /** Small rounded label used for the loader / version chips on the banner and for the news links. */
-const chip = "rounded-full bg-raised/90 px-4 py-1 text-[0.8125rem] font-medium text-white/85";
+const chip = "rounded-full bg-black/45 px-4 py-1 text-[0.8125rem] font-medium text-white backdrop-blur-sm";
 
 export function Home() {
   const { t } = useI18n();
@@ -24,7 +24,7 @@ export function Home() {
 
   return (
     <div className="flex h-full min-h-0 flex-col gap-3">
-      <div className="relative min-h-0 flex-1 overflow-hidden rounded-[22px] bg-panel">
+      <div className="relative isolate min-h-0 flex-1 overflow-hidden rounded-[22px] bg-panel [clip-path:inset(0_round_22px)]">
         {HEROES.map((src, i) => (
           <img key={src} src={src} alt="" aria-hidden draggable={false} className={`hero-zoom absolute inset-0 h-full w-full object-cover object-[50%_40%] transition-opacity duration-1000 ${i === heroIdx ? "opacity-100" : "opacity-0"}`} />
         ))}
