@@ -21,7 +21,9 @@ import { api, onLaunchState, onGameExit } from "./services/tauri";
 
 type PageComponent = () => ReactElement;
 /** Game and editor use exactly the same box: the whole screen minus the notch / system bars (body padding would push a h-screen box off-screen). */
-const FULL: CSSProperties = { boxSizing: "border-box", paddingTop: "env(safe-area-inset-top)", paddingRight: "env(safe-area-inset-right)", paddingBottom: "env(safe-area-inset-bottom)", paddingLeft: "env(safe-area-inset-left)" };
+// Full-bleed: the game surface already fills the whole screen (under the notch too), so the page on top must be exactly the same box.
+// Padding here shifted every overlay and the cursor by the notch width and left an undimmed strip on the left.
+const FULL: CSSProperties = { boxSizing: "border-box" };
 
 const PAGES: Record<Exclude<Page, "settings" | "editor" | "game">, PageComponent> = {
   home: Home,

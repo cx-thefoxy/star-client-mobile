@@ -182,7 +182,7 @@ export default function Game() {
         className="absolute left-1/2 top-2 z-[36] flex h-7 -translate-x-1/2 items-center gap-1.5 rounded-lg bg-black/50 px-3 text-[11px] font-medium text-white">
         <span className={`h-2 w-2 rounded-full ${menuMode ? "bg-green-400" : "bg-white/40"}`} />Mouse: {menuMode ? "ON" : "OFF"}
       </button>
-      <button onClick={() => setPaused(true)} onPointerDown={(e) => e.stopPropagation()} className="absolute left-2 top-2 z-20 flex h-8 w-8 items-center justify-center rounded-lg bg-black/60 text-white"><Pause size={14} /></button>
+      <button onClick={() => setPaused(true)} onPointerDown={(e) => e.stopPropagation()} style={{ left: "calc(env(safe-area-inset-left, 0px) + 8px)" }} className="absolute top-2 z-20 flex h-8 w-8 items-center justify-center rounded-lg bg-black/60 text-white"><Pause size={14} /></button>
       {ended !== null && (
         <div className="absolute inset-0 z-[45] flex items-center justify-center bg-black/70 p-3" onPointerDown={(e) => e.stopPropagation()}>
           <div className="w-[340px] max-w-full rounded-2xl border border-line bg-panel p-4 shadow-2xl">
