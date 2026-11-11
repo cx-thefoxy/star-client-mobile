@@ -32,7 +32,7 @@ public class StarGameService extends Service {
     @Override public void handleMessage(Message m) {
       try {
         switch (m.what) {
-          case MSG_INPUT: input(m.getData()); break;
+          case MSG_INPUT: stat(m); input(m.getData()); break;
           case MSG_SURFACE: surface(m.getData()); break;
           case MSG_SURFACE_GONE: gone(); break;
           case MSG_LAUNCH: launchData = m.getData(); logPath = launchData.getString("log"); tryStart(); break;
@@ -56,6 +56,19 @@ public class StarGameService extends Service {
   }
 
   @Override public IBinder onBind(Intent i) { return messenger.getBinder(); }
+
+  // Look-around diagnostics: how many cursor events arrive per second and how long they waited in the queue (shows in the game log).
+  private long statT, statN, statLat, statMax; private int statLines;
+  private void stat(Message m) {
+    String l = logPath; if (l == null || statLines >= 12 || !"cursor".equals(m.getData().getString("t", ""))) return;
+    long now = android.os.SystemClock.uptimeMillis(), lat = Math.max(0, now - m.getWhen());
+    statN++; statLat += lat; statMax = Math.max(statMax, lat);
+    if (statT == 0) statT = now;
+    if (now - statT >= 3000) {
+      note(l, "[star] look: " + (statN * 1000 / (now - statT)) + " cursor events/s, queue delay avg " + (statLat / statN) + " ms, max " + statMax + " ms");
+      statT = now; statN = statLat = statMax = 0; statLines++;
+    }
+  }
 
   private void input(Bundle b) throws Exception {
     String t = b.getString("t", "");
