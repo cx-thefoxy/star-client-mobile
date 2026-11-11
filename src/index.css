@@ -87,6 +87,8 @@
 :lang(fa) { --font-ui: "Inter", "Baloo Bhaijaan 2", "Vazirmatn", "Noto Sans Arabic", "Segoe UI", Tahoma, system-ui, sans-serif; --leading-ui: 1.6; }
 /* Letter-spacing breaks Arabic-script joining. */
 :lang(fa) * { letter-spacing: 0 !important; }
+/* Persian text inside an English UI (e.g. the language switch) still gets the Persian font stack. */
+[lang="fa"] { font-family: var(--font-ui); }
 
 /* ---------------------------------------------------------------- base */
 /* Slightly larger UI: every rem-based size (text, spacing, icons) scales with this. */

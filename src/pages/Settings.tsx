@@ -146,7 +146,7 @@ export function Settings() {
     <div role="radiogroup" aria-label={label} className="inline-flex shrink-0 rounded-xl border border-line bg-raised p-0.5">
       {options.map((o) => (
         <button key={o.value} type="button" role="radio" aria-checked={value === o.value} onClick={() => onPick(o.value)}
-          className={`rounded-[10px] px-3.5 py-1.5 text-sm transition-colors ${value === o.value ? "bg-accent font-semibold text-accent-ink shadow-sm" : "text-ink-muted hover:text-ink"}`}>{o.label}</button>
+          className={`rounded-[10px] px-3.5 py-1.5 text-sm transition-colors ${value === o.value ? "bg-accent font-semibold text-accent-ink shadow-sm" : "text-ink-muted hover:text-ink"}`}><span lang={/[\u0600-\u06FF]/.test(o.label) ? "fa" : undefined}>{o.label}</span></button>
       ))}
     </div>
   );
