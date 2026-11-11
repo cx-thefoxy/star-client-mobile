@@ -168,6 +168,7 @@ public class StarGameService extends Service {
             String fj = StarSplash.focusJar(gameDir), fp = fj == null ? "" : fj + java.io.File.pathSeparator;
             if (("-cp".equals(e) || "-classpath".equals(e)) && i + 1 < extra.length) { a.add(e); a.add(fp + StarSplash.patchClasspath(extra[++i], log)); cpDone = fj != null; }
             else if (e.startsWith("-Djava.class.path=")) { a.add("-Djava.class.path=" + fp + StarSplash.patchClasspath(e.substring("-Djava.class.path=".length()), log)); cpDone = fj != null; }
+            else if (("--width".equals(e) || "--height".equals(e)) && i + 1 < extra.length) { a.add(e); i++; a.add(String.valueOf("--width".equals(e) ? CallbackBridge.windowWidth : CallbackBridge.windowHeight)); } // the game window is the whole screen, not 854x480
             else a.add(e);
           }
         }
