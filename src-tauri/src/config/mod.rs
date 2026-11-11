@@ -34,6 +34,8 @@ pub struct GeneralSettings {
 #[serde(rename_all = "camelCase", default)]
 pub struct Appearance {
     pub language: String,
+    /// "dark" | "light"
+    pub theme: String,
     pub accent: String,
     pub reduced_motion: bool,
     pub background: String,
@@ -99,7 +101,7 @@ impl Default for Settings {
 impl Default for Appearance {
     fn default() -> Self {
         Self {
-            language: "en".into(), accent: "white".into(), reduced_motion: false, background: "aurora".into(),
+            language: "en".into(), theme: "dark".into(), accent: "white".into(), reduced_motion: false, background: "aurora".into(),
             dynamic_accent: false, corner_radius: 12, opacity: 100, direction: "ltr".into(),
         }
     }
@@ -142,7 +144,8 @@ impl Settings {
     /// Clamp everything to sane bounds. `total_ram_mb` lets us cap heap size to the machine.
     pub fn validated(mut self, total_ram_mb: Option<u64>) -> Self {
         let a = &mut self.appearance;
-        if a.language != "en" { a.language = "en".into(); }
+        if !matches!(a.language.as_str(), "en" | "fa") { a.language = "en".into(); }
+        if !matches!(a.theme.as_str(), "dark" | "light") { a.theme = "dark".into(); }
         if a.accent == "orange" { a.accent = "white".into(); }
         if !matches!(a.accent.as_str(), "white" | "amber" | "rose" | "sky" | "emerald") { a.accent = "white".into(); }
         if !matches!(a.background.as_str(), "aurora" | "voxel" | "minimal") { a.background = "aurora".into(); }
@@ -293,6 +296,20 @@ mod tests {
         assert_eq!(s.appearance.direction, "ltr");
         assert_eq!(s.minecraft.post_launch, "close");
         assert_eq!(s.java.java_paths, vec!["a".to_string()]);
+    }
+
+    #[test]
+    fn accepts_persian_and_light_theme_rejects_unknown() {
+        let mut s = Settings::default();
+        assert_eq!(s.appearance.theme, "dark");
+        s.appearance.language = "fa".into();
+        s.appearance.theme = "light".into();
+        let v = s.validated(None);
+        assert_eq!(v.appearance.language, "fa");
+        assert_eq!(v.appearance.theme, "light");
+        let mut bad = Settings::default();
+        bad.appearance.theme = "neon".into();
+        assert_eq!(bad.validated(None).appearance.theme, "dark");
     }
 
     #[test]

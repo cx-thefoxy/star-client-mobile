@@ -184,7 +184,7 @@ export function Settings() {
               {section === "general" && (<>
                 {sectionCard(t("settings.languageSection"), (
                   <div className="flex flex-col gap-4 text-sm">
-                    {row(t("settings.languageRow"), t("settings.languageRowHint"), <span className="rounded-lg bg-raised px-3 py-2 text-xs text-ink-muted">English</span>)}
+                    {row(t("settings.languageRow"), t("settings.languageRowHint"), segmented(t("settings.languageRow"), draft.appearance.language, [{ value: "en", label: "English" }, { value: "fa", label: "فارسی" }], (v) => set("appearance", { ...draft.appearance, language: v })))}
                     {row(t("settings.direction"), t("settings.directionHint"), segmented(t("settings.direction"), draft.appearance.direction, [{ value: "ltr", label: t("settings.direction.ltr") }, { value: "rtl", label: t("settings.direction.rtl") }], (v) => set("appearance", { ...draft.appearance, direction: v })))}
                   </div>
                 ))}
@@ -211,7 +211,7 @@ export function Settings() {
                   </div>
                   {row(t("settings.dynamicAccent"), t("settings.dynamicAccentHint"), <Toggle label={t("settings.dynamicAccent")} checked={draft.appearance.dynamicAccent} onChange={(v) => set("appearance", { ...draft.appearance, dynamicAccent: v })} />)}
                   {row(t("settings.reducedMotion"), t("settings.reducedMotionHint"), <Toggle label={t("settings.reducedMotion")} checked={draft.appearance.reducedMotion} onChange={(v) => set("appearance", { ...draft.appearance, reducedMotion: v })} />)}
-                  {row(t("settings.theme"), t("settings.themeHint"), <span className="rounded-lg bg-raised px-3 py-2 text-xs text-ink-muted">{t("settings.theme.dark")}</span>)}
+                  {row(t("settings.theme"), t("settings.themeHint"), segmented(t("settings.theme"), draft.appearance.theme, [{ value: "dark", label: t("settings.theme.dark") }, { value: "light", label: t("settings.theme.light") }], (v) => set("appearance", { ...draft.appearance, theme: v })))}
                 </div>
               ))}
               {sectionCard(t("settings.layout"), (

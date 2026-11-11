@@ -20,6 +20,19 @@ function writeCachedLang(l: Lang) {
   try { localStorage.setItem(LANG_CACHE_KEY, l); } catch { /* storage unavailable: harmless */ }
 }
 
+export type Theme = "dark" | "light";
+const THEME_CACHE_KEY = "star.theme";
+const normalizeTheme = (x: unknown): Theme => (x === "light" ? "light" : "dark");
+/** Same idea as the language cache: avoids a dark flash before settings load. Dark is the default. */
+function readCachedTheme(): Theme {
+  try { return normalizeTheme(localStorage.getItem(THEME_CACHE_KEY)); } catch { return "dark"; }
+}
+export function applyTheme(t: Theme) {
+  document.documentElement.dataset.theme = t;
+  try { localStorage.setItem(THEME_CACHE_KEY, t); } catch { /* harmless */ }
+}
+applyTheme(readCachedTheme());
+
 interface AppState {
   lang: Lang;
   page: Page;
@@ -140,6 +153,7 @@ export const useApp = create<AppState>((set, get) => ({
   applySettings: (settings) => {
     const lang = normalizeLang(settings.appearance.language);
     writeCachedLang(lang);
+    applyTheme(normalizeTheme(settings.appearance.theme));
     set({ settings, lang });
   },
 

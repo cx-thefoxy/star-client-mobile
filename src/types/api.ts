@@ -49,7 +49,7 @@ export interface GameExit { instanceId: string; code: number | null; crashed: bo
 
 export interface Settings {
   schemaVersion: number;
-  appearance: { language: "en"; accent: string; reducedMotion: boolean; background: string; dynamicAccent: boolean; cornerRadius: number; opacity: number; direction: "ltr" | "rtl" };
+  appearance: { language: "en" | "fa"; theme: "dark" | "light"; accent: string; reducedMotion: boolean; background: string; dynamicAccent: boolean; cornerRadius: number; opacity: number; direction: "ltr" | "rtl" };
   minecraft: { gameDir: string | null; preferredChannel: "release" | "snapshot"; showSnapshots: boolean; showOldBeta: boolean; showOldAlpha: boolean; defaultLoader: LoaderKind; width: number; height: number; fullscreen: boolean; closeLauncherOnStart: boolean; postLaunch: "keep" | "hide" | "close"; useDefaultResolution: boolean };
   java: { auto: boolean; customPath: string | null; minMemoryMb: number; maxMemoryMb: number; jvmArgs: string; javaPaths: string[]; gpuPreference: "automatic" | "integrated" | "dedicated" };
   downloads: { concurrency: number; retries: number };

@@ -11,20 +11,22 @@
 //     Persian and for mixed Persian/English text in any container (buttons, flex
 //     items, <option>, aria-label, title) without touching layout.
 import { en, type Key } from "./en";
+import { fa } from "./fa";
 
 export type { Key };
-export type Lang = "en";
+export type Lang = "en" | "fa";
 export type Params = Record<string, string | number>;
 
 export const LANGS: Record<Lang, { dir: "ltr" | "rtl"; locale: string; nativeName: string }> = {
   en: { dir: "ltr", locale: "en-US", nativeName: "English" },
+  fa: { dir: "rtl", locale: "fa-IR", nativeName: "فارسی" },
 };
 /** Matches the Rust default in src-tauri/src/config/mod.rs (`Appearance::default`). */
 export const DEFAULT_LANG: Lang = "en";
 
-export const dictionaries: Record<Lang, Partial<Record<Key, string>>> = { en };
+export const dictionaries: Record<Lang, Partial<Record<Key, string>>> = { en, fa };
 
-export const isLang = (x: unknown): x is Lang => x === "en";
+export const isLang = (x: unknown): x is Lang => x === "en" || x === "fa";
 export const normalizeLang = (x: unknown): Lang => (isLang(x) ? x : DEFAULT_LANG);
 
 const LRI = "\u2066", RLI = "\u2067", FSI = "\u2068", PDI = "\u2069";

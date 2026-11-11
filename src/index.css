@@ -46,6 +46,46 @@
 [data-accent="sky"]     { --c-accent: 56 189 248;  --c-accent-hover: 110 207 250; --c-accent-dim: 12 64 92;  --c-accent-ink: 3 22 33; }
 [data-accent="emerald"] { --c-accent: 52 211 153;  --c-accent-hover: 94 224 176;  --c-accent-dim: 10 76 54;  --c-accent-ink: 2 26 17; }
 
+/* ---------------------------------------------------------------- light theme */
+/* Dark is the default (see :root). The theme is set as data-theme on <html> from Settings → Appearance. */
+[data-theme="light"] {
+  --c-bg: 243 244 247;
+  --c-chrome: 243 244 247;
+  --c-panel: 255 255 255;
+  --c-raised: 237 239 243;
+  --c-control: 231 234 239;
+  --c-control-hover: 220 224 231;
+  --c-control-active: 207 212 221;
+  --c-line: 214 218 225;
+  --c-ink: 17 19 24;
+  --c-ink-muted: 75 85 99;     /* ≥ 7:1 on panel */
+  --c-ink-faint: 107 114 128;  /* ≥ 4.5:1 on panel */
+  --c-danger: 200 38 48;
+  --c-ok: 18 124 86;
+  --c-warn: 170 98 8;
+  color-scheme: light;
+}
+/* White accent has no contrast on a light background: use near-black with white text instead. */
+[data-theme="light"][data-accent="white"], [data-theme="light"] [data-accent="white"] { --c-accent: 23 24 26; --c-accent-hover: 55 57 62; --c-accent-dim: 226 228 232; --c-accent-ink: 255 255 255; }
+[data-theme="light"] [data-accent="amber"]   { --c-accent: 196 118 8;  --c-accent-hover: 170 100 4;  --c-accent-dim: 253 236 200; --c-accent-ink: 255 255 255; }
+[data-theme="light"] [data-accent="rose"]    { --c-accent: 219 39 87;  --c-accent-hover: 190 24 70;  --c-accent-dim: 254 226 231; --c-accent-ink: 255 255 255; }
+[data-theme="light"] [data-accent="sky"]     { --c-accent: 2 132 199;  --c-accent-hover: 3 105 161;  --c-accent-dim: 219 238 252; --c-accent-ink: 255 255 255; }
+[data-theme="light"] [data-accent="emerald"] { --c-accent: 5 150 105;  --c-accent-hover: 4 120 87;   --c-accent-dim: 211 244 230; --c-accent-ink: 255 255 255; }
+/* Translucent white/black overlays used by the shell are inverted so they stay visible. */
+[data-theme="light"] .bg-white\/5, [data-theme="light"] .hover\:bg-white\/5:hover,
+[data-theme="light"] .bg-white\/\[0\.05\], [data-theme="light"] .bg-white\/\[0\.06\] { background-color: rgb(0 0 0 / .05); }
+[data-theme="light"] .border-white\/10 { border-color: rgb(0 0 0 / .10); }
+[data-theme="light"] .bg-black\/30 { background-color: rgb(255 255 255 / .78); }
+[data-theme="light"] .skeleton { background: linear-gradient(90deg, rgba(0,0,0,.04), rgba(0,0,0,.09), rgba(0,0,0,.04)); background-size: 220% 100%; }
+[data-theme="light"] select option { background: #fff; color: rgb(var(--c-ink)); }
+[data-theme="light"] ::selection { background: rgb(var(--c-accent) / .22); }
+
+/* ---------------------------------------------------------------- Persian */
+/* Text direction is handled per string (bidi isolates); only typography changes here. */
+:lang(fa) { --font-ui: "Vazirmatn", "Noto Sans Arabic", "Segoe UI", Tahoma, system-ui, sans-serif; --leading-ui: 1.65; }
+/* Letter-spacing breaks Arabic-script joining. */
+:lang(fa) * { letter-spacing: 0 !important; }
+
 /* ---------------------------------------------------------------- base */
 /* Slightly larger UI: every rem-based size (text, spacing, icons) scales with this. */
 html { font-size: 17px; }

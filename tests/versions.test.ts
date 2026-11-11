@@ -37,3 +37,11 @@ describe("i18n", () => {
     expect(translate("en", "launch.play")).toBe("Launch Game");
   });
 });
+
+describe("persian + theme", () => {
+  it("translates to Persian, isolates RTL text and keeps no missing keys", async () => {
+    const { translate, plain, missingKeys } = await import("../src/i18n");
+    expect(plain(translate("fa", "launch.play"))).toBe("اجرای بازی");
+    expect(missingKeys("fa")).toEqual([]);
+  });
+});

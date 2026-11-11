@@ -66,6 +66,7 @@ export const en = {
 
   // ---- languages (endonyms: identical in every UI language)
   "language.en": "English",
+  "language.fa": "فارسی",
 
   // ---- loaders (product names)
   "loader.vanilla": "Vanilla",
@@ -368,8 +369,9 @@ export const en = {
   "settings.reducedMotion": "Reduce motion",
   "settings.reducedMotionHint": "Minimizes transitions and animations.",
   "settings.theme": "Theme",
-  "settings.themeHint": "Star Client uses a dark desktop theme.",
+  "settings.themeHint": "Choose a dark or light theme.",
   "settings.theme.dark": "Dark",
+  "settings.theme.light": "Light",
   "settings.memory": "Memory & Java",
   "settings.memoryMax": "Maximum memory (MB)",
   "settings.memoryMin": "Minimum memory (MB)",
