@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Pause, Play, Pencil, LogOut } from "lucide-react";
 import Editor from "./Editor";
+import LegacyLoading, { isLegacy } from "./LegacyLoading";
 import ControlsCanvas, { gamePx, effectiveGuiScale } from "./ControlsCanvas";
 import NativeKeyboard, { toggleKeyboard } from "./NativeKeyboard";
 import { lastKey, releaseAllHeld } from "./keys";
@@ -15,6 +16,10 @@ import { useApp } from "../store/app";
  */
 export default function Game() {
   const { resScale, guiScale, menuMode, setMenuMode, hideOnScreenUI, ctx, setCtx, setEditCtx } = useControls();
+  const game = useApp((s) => s.running[0]);
+  const [legacy, setLegacy] = useState(false);
+  const checked = useRef(false);
+  useEffect(() => { if (game && !checked.current) { checked.current = true; setLegacy(isLegacy(game)); } }, [game]);
   const [editing, setEditing] = useState(false); // edit the on-screen controls without leaving the game
   const setPage = useApp((s) => s.setPage);
   const look = useRef<{ id: number; x: number; y: number; moved: number } | null>(null);
@@ -160,6 +165,7 @@ export default function Game() {
 
   return (
     <div className="relative h-full w-full overflow-hidden" style={{ touchAction: "none" }} onMouseDown={(e) => { if (document.activeElement instanceof HTMLInputElement) e.preventDefault(); }} onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerCancel={up}>
+      {legacy && <LegacyLoading />}
       {editing && (
         <div className="absolute inset-0 z-[38]" onPointerDown={(e) => e.stopPropagation()} onPointerMove={(e) => e.stopPropagation()} onPointerUp={(e) => e.stopPropagation()} onPointerCancel={(e) => e.stopPropagation()}>
           <Editor onClose={() => setEditing(false)} />
