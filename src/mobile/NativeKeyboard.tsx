@@ -7,9 +7,11 @@ export const kbField: { el: HTMLInputElement | null } = { el: null };
 const SENT = "\u200b\u200b"; // sentinel text: lets us see Backspace even when the field is "empty"
 
 let wanted = false; // the keyboard should be open: a stray blur (a tap on the game, a screen change) must not close it
+let imeOpen: boolean | undefined; // reported by the Android side (undefined = unknown)
+(window as unknown as { __starIme?: (v: boolean) => void }).__starIme = (v) => { imeOpen = v; if (!v) wanted = false; };
 export const toggleKeyboard = () => {
   const el = kbField.el; if (!el) return;
-  if (document.activeElement === el) { wanted = false; el.blur(); }
+  if (document.activeElement === el && imeOpen !== false) { wanted = false; el.blur(); }
   else { wanted = true; el.value = SENT; el.focus(); el.setSelectionRange(SENT.length, SENT.length); }
 };
 

@@ -116,6 +116,11 @@ export default function Game() {
       holdT.current = window.setTimeout(() => {
         if ((look.current?.moved ?? 99) < 12) { holding.current = true; sendPos(); gameInput({ t: "mouse", button: 0, down: true }); }
       }, 450);
+    } else if (grab) {
+      // While playing: tap = hit / break once (kills a pig in a few taps), hold still = keep holding the left button (mine, bow...).
+      holdT.current = window.setTimeout(() => {
+        if ((look.current?.moved ?? 99) < 12) { holding.current = true; gameInput({ t: "mouse", button: 0, down: true }); }
+      }, 380);
     } else if (direct) {
       cur.current = { x: e.clientX * k, y: e.clientY * k };
       sendPos();
@@ -141,6 +146,12 @@ export default function Game() {
     if (touchpad) {
       if (holding.current) { holding.current = false; gameInput({ t: "mouse", button: 0, down: false }); return; }
       if (l.moved < 12 && Date.now() - t0.current < 400 && e.type === "pointerup") clickNow();
+    } else if (grab) {
+      if (holding.current) { holding.current = false; gameInput({ t: "mouse", button: 0, down: false }); }
+      else if (l.moved < 14 && Date.now() - t0.current < 380 && e.type === "pointerup") {
+        gameInput({ t: "mouse", button: 0, down: true });
+        window.setTimeout(() => gameInput({ t: "mouse", button: 0, down: false }), 70);
+      }
     } else if (direct) {
       if (pressT.current !== undefined) { window.clearTimeout(pressT.current); pressT.current = undefined; clickNow(); }
       else if (pressed.current) { pressed.current = false; window.setTimeout(() => gameInput({ t: "mouse", button: 0, down: false }), 60); }
