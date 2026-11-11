@@ -28,7 +28,23 @@ function pump() {
   void invoke("game_input", { evt: e }).catch(() => {}).finally(() => { window.clearTimeout(guard); next(); });
 }
 
-export const gameInput = (e: InputEvt) => { queue.push(e); pump(); };
+// Fast path: a direct, synchronous Java call (set up by MainActivity). Falls back to the Tauri invoke queue above when it is not there.
+type Direct = { input: (t: string, key: number, button: number, down: boolean, x: number, y: number, dy: number) => void };
+export const gameInput = (e: InputEvt) => {
+  const d = (window as unknown as { StarNative?: Direct }).StarNative;
+  if (d && queue.length === 0 && !busy) {
+    try {
+      switch (e.t) {
+        case "key": d.input("key", e.key, 0, e.down, 0, 0, 0); return;
+        case "mouse": d.input("mouse", 0, e.button, e.down, 0, 0, 0); return;
+        case "cursor": d.input("cursor", 0, 0, false, e.x, e.y, 0); return;
+        case "char": d.input("char", e.ch, 0, false, 0, 0, 0); return;
+        case "scroll": d.input("scroll", 0, 0, false, 0, 0, e.dy); return;
+      }
+    } catch { /* fall back below */ }
+  }
+  queue.push(e); pump();
+};
 
 export const gameSurface = (show: boolean, scale = 1) => { void invoke("game_surface", { show, scale }).catch(() => {}); };
 export const stopGame = () => invoke("stop_game").catch(() => {});
