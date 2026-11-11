@@ -173,6 +173,7 @@ public class StarGameService extends Service {
         a.add("-Dos.name=Linux");
         a.add("-Dorg.lwjgl.vulkan.libname=libvulkan.so");
         a.add("-Dlog4j2.formatMsgNoLookups=true");
+        a.add("-Dsodium.checks.issue2561=false");               // Sodium refuses Pojav's LWJGL 3.3.3-snapshot ("Required version: 3.3.1"); skip that check
         boolean sized = false;
         if (extra != null) {
           for (int i = 0; i < extra.length; i++) {
