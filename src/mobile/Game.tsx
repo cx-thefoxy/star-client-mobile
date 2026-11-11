@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Pause, Play, Pencil, LogOut } from "lucide-react";
+import Editor from "./Editor";
 import ControlsCanvas, { gamePx, effectiveGuiScale } from "./ControlsCanvas";
 import NativeKeyboard, { toggleKeyboard } from "./NativeKeyboard";
 import { lastKey, releaseAllHeld } from "./keys";
@@ -13,7 +14,8 @@ import { useApp } from "../store/app";
  * drag = look (or move the cursor and click when "tap to click" is on), widgets = keys, joystick = WASD.
  */
 export default function Game() {
-  const { resScale, guiScale, menuMode, setMenuMode, hideOnScreenUI, ctx, setCtx } = useControls();
+  const { resScale, guiScale, menuMode, setMenuMode, hideOnScreenUI, ctx, setCtx, setEditCtx } = useControls();
+  const [editing, setEditing] = useState(false); // edit the on-screen controls without leaving the game
   const setPage = useApp((s) => s.setPage);
   const look = useRef<{ id: number; x: number; y: number; moved: number } | null>(null);
   const cur = useRef({ x: 0, y: 0 });
@@ -147,7 +149,12 @@ export default function Game() {
 
   return (
     <div className="relative h-full w-full overflow-hidden" style={{ touchAction: "none" }} onMouseDown={(e) => { if (document.activeElement instanceof HTMLInputElement) e.preventDefault(); }} onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerCancel={up}>
-      {!hideOnScreenUI && <ControlsCanvas edit={false} onKb={toggleKeyboard} ctx={ctx} />}
+      {editing && (
+        <div className="absolute inset-0 z-[38]" onPointerDown={(e) => e.stopPropagation()} onPointerMove={(e) => e.stopPropagation()} onPointerUp={(e) => e.stopPropagation()} onPointerCancel={(e) => e.stopPropagation()}>
+          <Editor onClose={() => setEditing(false)} />
+        </div>
+      )}
+      {!hideOnScreenUI && !editing && <ControlsCanvas edit={false} onKb={toggleKeyboard} ctx={ctx} />}
       <NativeKeyboard onOpen={() => setKb(true)} onClose={() => setKb(false)} />
       {touchpad && !paused && curCss && (
         <svg className="pointer-events-none absolute z-[37]" width="22" height="22" viewBox="0 0 24 24" style={{ left: curCss.x - 3, top: curCss.y - 2 }}>
@@ -173,7 +180,7 @@ export default function Game() {
           <div className="w-[260px] space-y-2 rounded-2xl border border-line bg-panel p-4 shadow-2xl">
             <div className="mb-1 text-sm font-semibold">Paused</div>
             <button className={item} onClick={() => setPaused(false)}><Play size={15} />Resume</button>
-            <button className={item} onClick={() => { void stopGame(); setPage("editor"); }}><Pencil size={15} />Edit controls (closes the game)</button>
+            <button className={item} onClick={() => { releaseAllHeld(); setEditCtx(ctx); setPaused(false); setEditing(true); }}><Pencil size={15} />Edit controls</button>
             <button className={`${item} text-danger`} onClick={quit}><LogOut size={15} />Quit game</button>
           </div>
         </div>

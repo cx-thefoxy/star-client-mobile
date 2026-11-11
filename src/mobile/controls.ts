@@ -53,12 +53,49 @@ export const PRESETS: { group: string; items: Omit<Widget, "id" | "x" | "y" | "o
     { kind: "button", label: "Hide", key: "HIDE", w: 44, h: 36, toggle: true, round: false },
     { kind: "button", label: "Menu", key: "Menu", w: 44, h: 36, toggle: false, round: false },
   ] },
+  { group: "Hotbar slots", items: [
+    { kind: "button", label: "1", key: "1", w: 36, h: 36, toggle: false, round: false },
+    { kind: "button", label: "2", key: "2", w: 36, h: 36, toggle: false, round: false },
+    { kind: "button", label: "3", key: "3", w: 36, h: 36, toggle: false, round: false },
+    { kind: "button", label: "4", key: "4", w: 36, h: 36, toggle: false, round: false },
+    { kind: "button", label: "5", key: "5", w: 36, h: 36, toggle: false, round: false },
+    { kind: "button", label: "6", key: "6", w: 36, h: 36, toggle: false, round: false },
+    { kind: "button", label: "7", key: "7", w: 36, h: 36, toggle: false, round: false },
+    { kind: "button", label: "8", key: "8", w: 36, h: 36, toggle: false, round: false },
+    { kind: "button", label: "9", key: "9", w: 36, h: 36, toggle: false, round: false },
+  ] },
+  { group: "Chat & menus", items: [
+    { kind: "button", label: "Enter", key: "Enter", w: 52, h: 36, toggle: false, round: false },
+    { kind: "button", label: "Back", key: "Backspace", w: 52, h: 36, toggle: false, round: false },
+    { kind: "button", label: "/ Cmd", key: "/", w: 44, h: 36, toggle: false, round: false },
+    { kind: "button", label: "Alt", key: "Alt", w: 44, h: 36, toggle: false, round: false },
+    { kind: "button", label: "↑", key: "Up", w: 36, h: 36, toggle: false, round: false },
+    { kind: "button", label: "↓", key: "Down", w: 36, h: 36, toggle: false, round: false },
+    { kind: "button", label: "←", key: "Left", w: 36, h: 36, toggle: false, round: false },
+    { kind: "button", label: "→", key: "Right", w: 36, h: 36, toggle: false, round: false },
+  ] },
+  { group: "Extras", items: [
+    { kind: "button", label: "HUD", key: "F1", w: 44, h: 36, toggle: false, round: false },
+    { kind: "button", label: "Shot", key: "F2", w: 44, h: 36, toggle: false, round: false },
+    { kind: "button", label: "Full", key: "F11", w: 44, h: 36, toggle: false, round: false },
+    { kind: "button", label: "Debug", key: "F3", w: 48, h: 36, toggle: false, round: false },
+    { kind: "button", label: "Zoom", key: "C", w: 44, h: 36, toggle: false, round: false },
+    { kind: "button", label: "Players", key: "Tab", w: 56, h: 36, toggle: false, round: false },
+    { kind: "button", label: "Sprint", key: "Ctrl", w: 56, h: 40, toggle: true, round: false },
+    { kind: "button", label: "Fly", key: "Space", w: 46, h: 46, toggle: true, round: false },
+    { kind: "button", label: "Craft", key: "E", w: 52, h: 40, toggle: false, round: false },
+    { kind: "button", label: "Use", key: "RMB", w: 52, h: 52, toggle: false, round: true },
+    { kind: "button", label: "Mine", key: "LMB", w: 52, h: 52, toggle: false, round: true },
+    { kind: "button", label: "Map", key: "M", w: 44, h: 36, toggle: false, round: false },
+  ] },
 ];
 
 type Preset = (typeof PRESETS)[number]["items"][number];
 const P = (g: number, i: number) => PRESETS[g].items[i];
 /** Multi-button packs added in one tap. dx/dy are in % of the screen, relative to the first item. */
 export const PACKS: { label: string; items: (Preset & { dx: number; dy: number })[] }[] = [
+  { label: "Slots 1-9 row", items: PRESETS[4].items.map((it, i) => ({ ...it, dx: i * 5.4, dy: 0 })) },
+  { label: "Arrow keys", items: [{ ...PRESETS[5].items[4], dx: 5, dy: 0 }, { ...PRESETS[5].items[5], dx: 5, dy: 10.5 }, { ...PRESETS[5].items[6], dx: 0, dy: 10.5 }, { ...PRESETS[5].items[7], dx: 10, dy: 10.5 }] },
   { label: "D-pad (W A S D)", items: [
     { ...P(3, 0), dx: 5.4, dy: 0 }, { ...P(3, 1), dx: 0, dy: 11.6 }, { ...P(3, 2), dx: 5.4, dy: 11.6 }, { ...P(3, 3), dx: 10.8, dy: 11.6 } ] },
   { label: "Combat pad (Attack + Place + Jump)", items: [

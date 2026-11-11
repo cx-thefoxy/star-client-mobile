@@ -2,7 +2,7 @@
 import { gameInput } from "./native";
 
 const GLFW: Record<string, number> = {
-  Space: 32, Esc: 256, Enter: 257, Tab: 258, Backspace: 259,
+  Space: 32, "/": 47, Esc: 256, Enter: 257, Tab: 258, Backspace: 259,
   Right: 262, Left: 263, Down: 264, Up: 265, Shift: 340, Ctrl: 341, Alt: 342,
 };
 for (let i = 0; i < 26; i++) GLFW[String.fromCharCode(65 + i)] = 65 + i;

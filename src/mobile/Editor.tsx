@@ -4,7 +4,7 @@ import { useControls, PRESETS, PACKS, CTXS, ctxOf, type Kind, type Widget } from
 import { useApp } from "../store/app";
 import ControlsCanvas, { Face, radiusOf } from "./ControlsCanvas";
 
-const KEYS = ["Space", "Shift", "Ctrl", "E", "Q", "T", "Tab", "F3", "F5", "Esc", "LMB", "RMB", "MMB", "ScrollUp", "ScrollDown", "Menu", "HIDE", "KEYBOARD"];
+const KEYS = ["Enter", "Backspace", "Alt", "Up", "Down", "Left", "Right", "/", "Space", "Shift", "Ctrl", "E", "Q", "T", "Tab", "F3", "F5", "Esc", "LMB", "RMB", "MMB", "ScrollUp", "ScrollDown", "Menu", "HIDE", "KEYBOARD"];
 const MORE = [..."ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789", ...Array.from({ length: 12 }, (_, i) => `F${i + 1}`)];
 const TINTS = [undefined, "#ffffff", "#ef4444", "#22c55e", "#3b82f6", "#eab308"];
 const KINDS: { id: Kind; label: string; w: number; h: number; name: string; key: string; radius: number }[] = [
@@ -88,7 +88,7 @@ function AddDialog({ onClose }: { onClose: () => void }) {
   );
 }
 
-export default function Editor({ openAdd = false, openCustom = false }: { openAdd?: boolean; openCustom?: boolean }) {
+export default function Editor({ openAdd = false, openCustom = false, onClose }: { openAdd?: boolean; openCustom?: boolean; onClose?: () => void }) {
   const { profiles, active, editing, pick, addWidget, addPack, duplicateWidget, patchWidget, removeWidget, resetProfile, editCtx, setEditCtx } = useControls();
   const setPage = useApp((s) => s.setPage);
   const [quick, setQuick] = useState(openAdd);
@@ -101,11 +101,11 @@ export default function Editor({ openAdd = false, openCustom = false }: { openAd
   const bump = (k: string) => setAdded((o) => ({ ...o, [k]: (o[k] ?? 0) + 1 }));
 
   return (
-    <div className="relative h-full w-full overflow-hidden bg-bg">
-      <div className="absolute inset-0 bg-black/60" />
+    <div className={`relative h-full w-full overflow-hidden ${onClose ? "" : "bg-bg"}`}>
+      <div className={`absolute inset-0 ${onClose ? "bg-black/35" : "bg-black/60"}`} />
       <ControlsCanvas edit onKb={() => {}} snap={snap} ctx={editCtx} />
       <div className="absolute inset-x-0 top-0 z-30 flex items-center gap-2 p-2">
-        <button className={btn} onClick={() => setPage("controls")}><ArrowLeft size={14} />Back</button>
+        <button className={btn} onClick={() => (onClose ? onClose() : setPage("controls"))}><ArrowLeft size={14} />{onClose ? "Done" : "Back"}</button>
         <div className={`${btn} pointer-events-none max-w-[110px] truncate`}>{p.name}</div>
         <div className="flex gap-1 rounded-xl bg-black/60 p-1 backdrop-blur">
           {CTXS.map((c) => <button key={c.id} onClick={() => { setEditCtx(c.id); setQuick(false); }} className={`h-6 rounded-lg px-2 text-[11px] font-medium ${editCtx === c.id ? "bg-accent text-accent-ink" : "text-white/80"}`}>{c.label}</button>)}
