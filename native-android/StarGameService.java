@@ -127,7 +127,7 @@ public class StarGameService extends Service {
         String[] so = new java.io.File(nat).list();
         if (so != null) java.util.Arrays.sort(so);
         note(log, "[star] nativeLibDir " + nat + ": " + (so == null ? "(unreadable)" : String.join(" ", so)));
-        String gl = d.getString("renderer", "").toLowerCase().contains("ltw") && new java.io.File(nat, "libltw.so").exists() ? "libltw.so" : "libgl4es_114.so"; // LTW not bundled -> gl4es
+        String gl = (d.getString("renderer", "").toLowerCase().contains("ltw") || needsGl33(d.getStringArray("args"))) && new java.io.File(nat, "libltw.so").exists() ? "libltw.so" : "libgl4es_114.so"; // 1.21.5+ / 26.x use LTW automatically (OpenGL 3.3); others follow the setting
         java.io.File glFile = new java.io.File(nat, gl);
         if (!new java.io.File(nat, "libpojavexec.so").exists()) throw new Exception("libpojavexec.so is missing in jniLibs/arm64-v8a (see native-android/jniLibs).");
         if (!glFile.exists()) throw new Exception(gl + " is missing in jniLibs/arm64-v8a (renderer).");
