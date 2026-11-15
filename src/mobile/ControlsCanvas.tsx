@@ -81,6 +81,7 @@ function Item({ w, edit, snap, onKb }: { w: Widget; edit: boolean; snap: boolean
     e.currentTarget.setPointerCapture(e.pointerId);
     if (edit) { pick(w.id); if (hb) return; start.current = { px: e.clientX, py: e.clientY, x: w.x, y: w.y }; return; }
     if (hb) { const i = slotAt(e); setSlot(i); sendWidgetKey(String(i + 1), true); sendWidgetKey(String(i + 1), false); return; } // tap or drag on the hotbar picks the slot
+    pressing.current = true;
     press(w.key);
     if (!w.toggle) { releaseKey(); pressedKey.current = { key: w.key, at: Date.now() }; } // (a stuck earlier press is released first)
     sendWidgetKey(w.key, w.toggle ? !down : true);
@@ -101,7 +102,8 @@ function Item({ w, edit, snap, onKb }: { w: Widget; edit: boolean; snap: boolean
       setMove(dx, dy, m);
     }
   };
-  const onUp = () => { start.current = null; if (!edit && w.key === "KEYBOARD") onKb(); /* on release: Android only opens the keyboard from a finished tap */ if (!edit) { if (!w.toggle) { setDown(false); releaseKey(); } setKnob({ x: 0, y: 0 }); setMove(0, 0, 1); } };
+  const pressing = useRef(false); // one tap fires pointerup AND lostpointercapture: the Keyboard button must toggle once, and only on a real release (not a cancel)
+  const onUp = (e: React.PointerEvent) => { start.current = null; const was = pressing.current; pressing.current = false; if (!edit && was && e.type === "pointerup" && w.key === "KEYBOARD") onKb(); /* on release: Android only opens the keyboard from a finished tap */ if (!edit) { if (!w.toggle) { setDown(false); releaseKey(); } setKnob({ x: 0, y: 0 }); setMove(0, 0, 1); } };
 
   const hDown = (e: React.PointerEvent) => { e.stopPropagation(); e.currentTarget.setPointerCapture(e.pointerId); size.current = { px: e.clientX, py: e.clientY, w: w.w, h: w.h }; };
   const hMove = (e: React.PointerEvent) => {
