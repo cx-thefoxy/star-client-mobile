@@ -20,7 +20,7 @@ function writeCachedLang(l: Lang) {
   try { localStorage.setItem(LANG_CACHE_KEY, l); } catch { /* storage unavailable: harmless */ }
 }
 
-export type Theme = "dark";
+export type Theme = "dark" | "light";
 const THEME_CACHE_KEY = "star.theme";
 const normalizeTheme = (_x: unknown): Theme => "dark"; // light theme was removed: always dark
 /** Same idea as the language cache: avoids a dark flash before settings load. Dark is the default. */
