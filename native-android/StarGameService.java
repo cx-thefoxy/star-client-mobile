@@ -131,6 +131,8 @@ public class StarGameService extends Service {
         java.io.File glFile = new java.io.File(nat, gl);
         if (!new java.io.File(nat, "libpojavexec.so").exists()) throw new Exception("libpojavexec.so is missing in jniLibs/arm64-v8a (see native-android/jniLibs).");
         if (!glFile.exists()) throw new Exception(gl + " is missing in jniLibs/arm64-v8a (renderer).");
+        if (gl.equals("libgl4es_114.so") && needsGl33(d.getStringArray("args"))) // 1.21.5+ / 26.x map GPU buffers (OpenGL 3.3): GL4ES cannot, the game would crash on the first frame
+          throw new Exception("This Minecraft version needs OpenGL 3.3+ (1.21.5 and newer, 26.x). The bundled GL4ES renderer cannot run it and this build has no libltw.so. Use 1.21.4 or older.");
         note(log, "[star] step 2: environment");
         android.system.Os.setenv("POJAV_NATIVEDIR", nat, true);
         android.system.Os.setenv("JAVA_HOME", jre, true);
@@ -192,5 +194,21 @@ public class StarGameService extends Service {
       note(log, "\n[exit " + code + "]");
       android.os.Process.killProcess(android.os.Process.myPid());
     }, "star-jvm").start();
+  }
+
+  /** True for Minecraft 1.21.5+ and the 26.x line, read from "--version" (e.g. "1.21.11", "fabric-loader-0.20.1-1.21.11", "26.3"). */
+  private static boolean needsGl33(String[] args) {
+    if (args == null) return false;
+    for (int i = 0; i + 1 < args.length; i++) {
+      if (!"--version".equals(args[i])) continue;
+      String[] parts = args[i + 1].split("-");
+      for (int j = parts.length - 1; j >= 0; j--) {
+        java.util.regex.Matcher m = java.util.regex.Pattern.compile("^(\\d+)\\.(\\d+)(?:\\.(\\d+))?$").matcher(parts[j]);
+        if (!m.matches()) continue;
+        int a = Integer.parseInt(m.group(1)), b = Integer.parseInt(m.group(2)), c = m.group(3) == null ? 0 : Integer.parseInt(m.group(3));
+        return a >= 26 || (a == 1 && (b > 21 || (b == 21 && c >= 5)));
+      }
+    }
+    return false;
   }
 }

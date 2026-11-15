@@ -76,6 +76,10 @@ async fn run_launch(app: &AppHandle, st: &St<'_>, inst: &crate::instances::Insta
     };
     let resolved = install::ensure_installed(&dl, &dirs, &manifest, &env, req, cancel.clone(), sink).await?;
     emit(app, &id, "preparing", "Preparing runtime", None);
+    // Only Java 8, 17 and 21 are bundled. Minecraft 26.x asks for Java 25: starting it on 21 just dies with exit code 1.
+    if resolved.version.java_version.as_ref().map(|j| j.major_version).unwrap_or(8) > 21 {
+        return Err(AppError::Validation(format!("{} needs Java {}, but this build only includes Java 8, 17 and 21.", inst.version_id, resolved.version.java_version.as_ref().map(|j| j.major_version).unwrap_or(0))));
+    }
 
     // Java: the runtime bundled in the APK that matches the version (unpacked on first use).
     let required = resolved.version.java_version.as_ref().map(|j| j.major_version).unwrap_or(8);
