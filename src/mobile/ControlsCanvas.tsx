@@ -41,7 +41,7 @@ export function Face({ w, down, knob, slot = 0 }: { w: Widget; down: boolean; kn
   );
 }
 
-function Item({ w, edit, snap, onKb }: { w: Widget; edit: boolean; snap: boolean; onKb: () => void }) {
+function Item({ w, edit, snap, onKb, kbOpen }: { w: Widget; edit: boolean; snap: boolean; onKb: () => void; kbOpen: boolean }) {
   const { editing, pick, patchWidget, guiScale, resScale, slot, setSlot } = useControls();
   const box = useRef<HTMLDivElement>(null);
   const start = useRef<{ px: number; py: number; x: number; y: number } | null>(null);
@@ -82,6 +82,7 @@ function Item({ w, edit, snap, onKb }: { w: Widget; edit: boolean; snap: boolean
     if (edit) { pick(w.id); if (hb) return; start.current = { px: e.clientX, py: e.clientY, x: w.x, y: w.y }; return; }
     if (hb) { const i = slotAt(e); setSlot(i); sendWidgetKey(String(i + 1), true); sendWidgetKey(String(i + 1), false); return; } // tap or drag on the hotbar picks the slot
     pressing.current = true;
+    if (w.key === "KEYBOARD") return; // the Keyboard button only toggles the phone keyboard (on release); its lit state follows the real keyboard
     press(w.key);
     if (!w.toggle) { releaseKey(); pressedKey.current = { key: w.key, at: Date.now() }; } // (a stuck earlier press is released first)
     sendWidgetKey(w.key, w.toggle ? !down : true);
@@ -117,7 +118,7 @@ function Item({ w, edit, snap, onKb }: { w: Widget; edit: boolean; snap: boolean
       ref={box} className="ctl pointer-events-auto absolute" onPointerDown={onDown} onPointerMove={onMove} onPointerUp={onUp} onPointerCancel={onUp} onLostPointerCapture={onUp}
       style={{ left: hb ? `calc(50% - ${bw0 / 2}px)` : `min(${w.x}%, calc(100% - ${bw0}px))`, top: hb ? `calc(100% - ${bh0}px)` : `min(${w.y}%, calc(100% - ${bh0}px))`, width: bw0, height: bh0, opacity: edit ? Math.max(w.opacity, 0.6) : w.opacity, zIndex: w.kind === "touchpad" ? 1 : 2 }}
     >
-      <Face w={hb ? { ...w, w: bw0, h: bh0 } : w} down={down} knob={knob} slot={slot} />
+      <Face w={hb ? { ...w, w: bw0, h: bh0 } : w} down={w.key === "KEYBOARD" ? kbOpen : down} knob={knob} slot={slot} />
       {edit && editing === w.id && !hb && (
         <>
           <div className="pointer-events-none absolute -inset-[3px] rounded-lg border-2 border-accent" />
@@ -129,13 +130,13 @@ function Item({ w, edit, snap, onKb }: { w: Widget; edit: boolean; snap: boolean
   );
 }
 
-export default function ControlsCanvas({ edit, onKb, snap = false, ctx = "game" }: { edit: boolean; onKb: () => void; snap?: boolean; ctx?: Ctx }) {
+export default function ControlsCanvas({ edit, onKb, snap = false, ctx = "game", kbOpen = false }: { edit: boolean; onKb: () => void; snap?: boolean; ctx?: Ctx; kbOpen?: boolean }) {
   const { profiles, active, pick } = useControls();
   const p = profiles.find((x) => x.id === active)!;
   return (
     <div className={`absolute inset-0 ${edit ? "" : "pointer-events-none z-[35]"}`} onPointerDown={() => edit && pick(null)}>
       {edit && snap && <div className="pointer-events-none absolute inset-0" style={{ backgroundImage: "linear-gradient(to right, rgba(255,255,255,.07) 1px, transparent 1px), linear-gradient(to bottom, rgba(255,255,255,.07) 1px, transparent 1px)", backgroundSize: `${(SW * 2) / 100}px ${(SH * 4) / 100}px` }} />}
-      {p.widgets.filter((w) => ctxOf(w) === ctx).map((w) => <Item key={w.id} w={w} edit={edit} snap={snap} onKb={onKb} />)}
+      {p.widgets.filter((w) => ctxOf(w) === ctx).map((w) => <Item key={w.id} w={w} edit={edit} snap={snap} onKb={onKb} kbOpen={kbOpen} />)}
     </div>
   );
 }

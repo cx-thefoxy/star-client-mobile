@@ -25,7 +25,7 @@ export default function Game() {
   const look = useRef<{ id: number; x: number; y: number; moved: number } | null>(null);
   const cur = useRef({ x: 0, y: 0 });
   const [paused, setPaused] = useState(false);
-  const [, setKb] = useState(false);
+  const [kb, setKb] = useState(false);
   // Cursor grab from the game: true = playing, false = a screen with a cursor (title menu, inventory, pause, chat...).
   const [grab, setGrab] = useState<boolean>(!!(window as unknown as { __starGrabState?: boolean }).__starGrabState);
   const [curCss, setCurCss] = useState<{ x: number; y: number } | null>(null);
@@ -171,7 +171,7 @@ export default function Game() {
           <Editor onClose={() => setEditing(false)} />
         </div>
       )}
-      {!hideOnScreenUI && !editing && <ControlsCanvas edit={false} onKb={toggleKeyboard} ctx={ctx} />}
+      {!hideOnScreenUI && !editing && <ControlsCanvas edit={false} onKb={toggleKeyboard} ctx={ctx} kbOpen={kb} />}
       <NativeKeyboard onOpen={() => setKb(true)} onClose={() => setKb(false)} />
       {touchpad && !paused && curCss && (
         <svg className="pointer-events-none absolute z-[37]" width="22" height="22" viewBox="0 0 24 24" style={{ left: curCss.x - 3, top: curCss.y - 2 }}>
